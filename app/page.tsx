@@ -2,8 +2,8 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { UserButton } from '@clerk/nextjs'
-import { useServerState } from '@/hooks/use-server-state'
+import { useAuth, UserButton } from '@clerk/nextjs'
+import { useLocalStorage } from '@/hooks/use-local-storage'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
@@ -84,10 +84,28 @@ function LoadingSkeleton() {
 }
 
 export default function GrenadaCommandCenter() {
-  const [state, setState, loading] = useServerState()
+  const { isLoaded, isSignedIn } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('today')
+  const [state, setState] = useLocalStorage<AppState>('grenada_state', DEFAULT_STATE)
 
-  if (loading) return <LoadingSkeleton />
+  if (!isLoaded) return <LoadingSkeleton />
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-text">Grenada Command Center</h1>
+          <p className="text-muted">Sign in to access your dashboard</p>
+          <a 
+            href="/sign-in" 
+            className="inline-block bg-accent text-white px-6 py-2 rounded-lg font-medium hover:bg-accent/90 transition-colors"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const totalIncome = useMemo(
     () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
@@ -121,7 +139,6 @@ export default function GrenadaCommandCenter() {
     []
   )
 
-  // ── Handlers ────────────────────────────────────────────────────────────
   const set = useCallback(<K extends keyof AppState>(key: K, value: AppState[K]) =>
     setState(prev => ({ ...prev, [key]: value })), [setState])
 
@@ -230,7 +247,6 @@ export default function GrenadaCommandCenter() {
     setState(prev => ({ ...prev, goals: (prev.goals || []).filter(g => g.id !== id) }))
   }, [setState])
 
-  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="relative z-[1] max-w-[1100px] mx-auto px-5 py-6">
 
