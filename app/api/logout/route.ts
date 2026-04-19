@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { getSession } from '@/lib/session'
+import { COOKIE_NAME } from '@/lib/auth-cookie'
 
 export async function POST() {
-  const session = await getSession()
-  session.destroy()
-  return NextResponse.json({ ok: true })
+  const res = NextResponse.json({ ok: true })
+  res.cookies.set(COOKIE_NAME, '', { maxAge: 0, path: '/' })
+  return res
 }
