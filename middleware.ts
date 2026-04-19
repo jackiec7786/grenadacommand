@@ -2,16 +2,14 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getIronSession } from 'iron-session'
 import type { SessionData } from '@/lib/session'
+import { SESSION_OPTIONS } from '@/lib/session-config'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
   if (req.nextUrl.pathname.startsWith('/sign-in')) return res
 
-  const session = await getIronSession<SessionData>(req.cookies, res.cookies, {
-    password: process.env.SESSION_SECRET as string,
-    cookieName: 'grenada_session',
-  })
+  const session = await getIronSession<SessionData>(req.cookies, res.cookies, SESSION_OPTIONS)
 
   if (!session.isLoggedIn) {
     return NextResponse.redirect(new URL('/sign-in', req.url))
