@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname.startsWith('/sign-in')) {
+  const { pathname } = req.nextUrl
+  if (
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/api/login') ||
+    pathname.startsWith('/api/logout')
+  ) {
     return NextResponse.next()
   }
 
