@@ -11,18 +11,18 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --bg: #0a0e0d;
-  --surface: #111815;
-  --surface2: #172018;
-  --border: #1e2e22;
-  --accent: #2dff6e;
-  --accent2: #00c4a0;
-  --warn: #ff8c42;
-  --danger: #ff4457;
-  --text: #e8f5ec;
-  --muted: #5a7a62;
-  --dim: #2a3d2e;
-  --purple: #a78bfa;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #dce3ed;
+  --accent: #2563eb;
+  --accent2: #0ea5e9;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --text: #1e293b;
+  --muted: #64748b;
+  --dim: #e9eef5;
+  --purple: #7c3aed;
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -31,15 +31,15 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary: var(--accent);
-  --primary-foreground: var(--bg);
+  --primary-foreground: #ffffff;
   --secondary: var(--surface2);
   --secondary-foreground: var(--text);
   --muted-bg: var(--dim);
   --muted-foreground: var(--muted);
   --accent-bg: var(--accent);
-  --accent-foreground: var(--bg);
+  --accent-foreground: #ffffff;
   --destructive: var(--danger);
-  --destructive-foreground: var(--bg);
+  --destructive-foreground: #ffffff;
   --input: var(--dim);
   --ring: var(--accent);
   --radius: 0.375rem;
@@ -89,7 +89,7 @@
   }
   body {
     @apply bg-bg text-text font-sans antialiased min-h-screen overflow-x-hidden;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+    color-scheme: light;
   }
 }
 
