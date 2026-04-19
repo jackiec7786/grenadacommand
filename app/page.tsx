@@ -2,7 +2,8 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useLocalStorage } from '@/hooks/use-local-storage'
+import { UserButton } from '@clerk/nextjs'
+import { useServerState } from '@/hooks/use-server-state'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
@@ -64,9 +65,29 @@ const TABS: { id: Tab; label: string }[] = [
 
 function getTodayStr() { return new Date().toISOString().slice(0, 10) }
 
+function LoadingSkeleton() {
+  return (
+    <div className="max-w-[1100px] mx-auto px-5 py-6 space-y-4">
+      <div className="h-16 bg-surface rounded-md border border-border animate-pulse" />
+      <div className="flex gap-1">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-8 w-20 bg-dim rounded-sm animate-pulse" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-48 bg-surface rounded-md border border-border animate-pulse" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function GrenadaCommandCenter() {
-  const [state, setState] = useLocalStorage<AppState>('grenada_state', DEFAULT_STATE)
+  const [state, setState, loading] = useServerState()
   const [activeTab, setActiveTab] = useState<Tab>('today')
+
+  if (loading) return <LoadingSkeleton />
 
   const totalIncome = useMemo(
     () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
@@ -222,11 +243,14 @@ export default function GrenadaCommandCenter() {
           <h2 className="text-[28px] font-extrabold leading-none text-text">The Master Plan</h2>
         </div>
         <div className="text-right max-[700px]:text-left flex flex-col items-end max-[700px]:items-start gap-2">
-          <div
-            className="inline-block text-white text-[10px] font-bold font-mono tracking-[0.15em] px-2.5 py-1 rounded-sm uppercase"
-            style={{ background: config.cssColor }}
-          >
-            {PHASE_LABELS[state.currentPhase]}
+          <div className="flex items-center gap-3">
+            <div
+              className="inline-block text-white text-[10px] font-bold font-mono tracking-[0.15em] px-2.5 py-1 rounded-sm uppercase"
+              style={{ background: config.cssColor }}
+            >
+              {PHASE_LABELS[state.currentPhase]}
+            </div>
+            <UserButton afterSignOutUrl="/sign-in" />
           </div>
           <div className="font-mono text-xs text-muted-foreground">{today}</div>
           <div className="flex items-center gap-2">
@@ -523,7 +547,7 @@ export default function GrenadaCommandCenter() {
 
       {/* Footer */}
       <footer className="mt-8 pt-4 border-t border-border flex justify-between items-center">
-        <span className="font-mono text-[10px] text-muted-foreground tracking-[0.1em]">All data saved locally in your browser</span>
+        <span className="font-mono text-[10px] text-muted-foreground tracking-[0.1em]">Data saved to your account</span>
         <button
           onClick={() => { if (confirm('Reset all data? This cannot be undone.')) setState(DEFAULT_STATE) }}
           className="bg-transparent border border-border text-muted-foreground font-mono text-[9px] tracking-[0.15em] px-2.5 py-1.5 rounded-sm cursor-pointer uppercase transition-all hover:border-danger hover:text-danger"
