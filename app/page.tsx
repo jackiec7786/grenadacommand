@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { UserButton } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { useServerState } from '@/hooks/use-server-state'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
@@ -86,6 +86,13 @@ function LoadingSkeleton() {
 export default function GrenadaCommandCenter() {
   const [state, setState, loading] = useServerState()
   const [activeTab, setActiveTab] = useState<Tab>('today')
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' })
+    router.push('/sign-in')
+    router.refresh()
+  }
 
   if (loading) return <LoadingSkeleton />
 
@@ -250,7 +257,12 @@ export default function GrenadaCommandCenter() {
             >
               {PHASE_LABELS[state.currentPhase]}
             </div>
-            <UserButton afterSignOutUrl="/sign-in" />
+            <button
+              onClick={handleLogout}
+              className="text-[9px] font-mono text-muted-foreground hover:text-danger transition-all cursor-pointer border border-border px-2.5 py-1 rounded-sm hover:border-danger"
+            >
+              Sign out
+            </button>
           </div>
           <div className="font-mono text-xs text-muted-foreground">{today}</div>
           <div className="flex items-center gap-2">
