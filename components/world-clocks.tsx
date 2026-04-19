@@ -15,6 +15,7 @@ const TIME_ZONES: TimeZone[] = [
   { id: 'grenada', city: 'Grenada', timezone: 'America/Grenada', flag: 'GD' },
   { id: 'newyork', city: 'New York', timezone: 'America/New_York', flag: 'US' },
   { id: 'london', city: 'London', timezone: 'Europe/London', flag: 'GB' },
+  { id: 'karachi', city: 'Karachi', timezone: 'Asia/Karachi', flag: 'PK' },
   { id: 'dubai', city: 'Dubai', timezone: 'Asia/Dubai', flag: 'AE' },
   { id: 'tokyo', city: 'Tokyo', timezone: 'Asia/Tokyo', flag: 'JP' },
 ]
