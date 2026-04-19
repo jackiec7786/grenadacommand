@@ -1,7 +1,9 @@
 "use client"
 
+import { useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useLocalStorage } from '@/hooks/use-local-storage'
-import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry } from '@/lib/data'
+import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
 import { WeeklyScorecard } from '@/components/weekly-scorecard'
@@ -18,10 +20,9 @@ import { PlanWeekTracker } from '@/components/plan-week-tracker'
 import { DataBackup } from '@/components/data-backup'
 import { WorldClocks } from '@/components/world-clocks'
 import { ExpenseTracker } from '@/components/expense-tracker'
-import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { SmartActionRecommender } from '@/components/smart-action-recommender'
 import { PomodoroTimer } from '@/components/pomodoro-timer'
-import type { Expense, PomodoroSession } from '@/lib/data'
+import type { Expense, PomodoroSession, AmazonProduct, UpworkProposal, SpeedEntry } from '@/lib/data'
 import { WeeklyReviewPanel } from '@/components/weekly-review'
 import { ContactTracker } from '@/components/contact-tracker'
 import { DecisionLog } from '@/components/decision-log'
@@ -44,146 +45,175 @@ import { UpworkTracker } from '@/components/upwork-tracker'
 import { CredentialsVault } from '@/components/credentials-vault'
 import { FreightCalculator } from '@/components/freight-calculator'
 import { InternetLog } from '@/components/internet-log'
-import type { AmazonProduct, UpworkProposal, SpeedEntry } from '@/lib/data'
+
+// Dynamically import the recharts-heavy analytics dashboard to keep the initial bundle lean
+const AnalyticsDashboard = dynamic(
+  () => import('@/components/analytics-dashboard').then(m => ({ default: m.AnalyticsDashboard })),
+  { loading: () => <div className="h-64 bg-surface rounded-xl border border-border animate-pulse" /> }
+)
 
 function getTodayStr() { return new Date().toISOString().slice(0, 10) }
 
 export default function GrenadaCommandCenter() {
   const [state, setState] = useLocalStorage<AppState>('grenada_state', DEFAULT_STATE)
 
-  const totalIncome = Object.values(state.income).reduce((s, v) => s + (v || 0), 0)
-  const totalMilestonesDone = Object.values(state.milestones).filter(Boolean).length
-  const overallPct = Math.round((totalMilestonesDone / MILESTONES.length) * 100)
-  const config = PHASE_CONFIGS[state.currentPhase as keyof typeof PHASE_CONFIGS]
+  const totalIncome = useMemo(
+    () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
+    [state.income]
+  )
 
-  // Merge phaseChecks + survivalChecks for backward compat
-  const allChecks = { ...state.survivalChecks, ...state.phaseChecks }
+  const overallPct = useMemo(() => {
+    const done = Object.values(state.milestones).filter(Boolean).length
+    return Math.round((done / MILESTONES.length) * 100)
+  }, [state.milestones])
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+  const config = useMemo(
+    () => PHASE_CONFIGS[state.currentPhase as keyof typeof PHASE_CONFIGS],
+    [state.currentPhase]
+  )
+
+  const allChecks = useMemo(
+    () => ({ ...state.survivalChecks, ...state.phaseChecks }),
+    [state.survivalChecks, state.phaseChecks]
+  )
+
+  const todayDeepWorkMinutes = useMemo(() => {
+    const todayStr = getTodayStr()
+    return (state.pomodoroSessions || [])
+      .filter(s => s.completedAt.startsWith(todayStr) && s.type === 'work')
+      .reduce((sum, s) => sum + Math.floor(s.duration / 60), 0)
+  }, [state.pomodoroSessions])
+
+  const today = useMemo(
+    () => new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }),
+    []
+  )
 
   // ── Handlers ────────────────────────────────────────────────────────────
-  const set = <K extends keyof AppState>(key: K, value: AppState[K]) =>
-    setState(prev => ({ ...prev, [key]: value }))
+  const set = useCallback(<K extends keyof AppState>(key: K, value: AppState[K]) =>
+    setState(prev => ({ ...prev, [key]: value })), [setState])
 
-  const handleLogToday = () => {
+  const handleLogToday = useCallback(() => {
     const todayStr = getTodayStr()
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().slice(0, 10)
-    const newStreak = state.lastActiveDate === yesterdayStr
-      ? (state.streakDays || 0) + 1
-      : state.lastActiveDate === todayStr ? state.streakDays : 1
-    setState(prev => ({ ...prev, streakDays: newStreak, lastActiveDate: todayStr }))
-  }
+    setState(prev => {
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().slice(0, 10)
+      const newStreak = prev.lastActiveDate === yesterdayStr
+        ? (prev.streakDays || 0) + 1
+        : prev.lastActiveDate === todayStr ? prev.streakDays : 1
+      return { ...prev, streakDays: newStreak, lastActiveDate: todayStr }
+    })
+  }, [setState])
 
-  const handleLogMood = (level: MoodEntry['level']) => {
+  const handleLogMood = useCallback((level: MoodEntry['level']) => {
     const todayStr = getTodayStr()
     setState(prev => ({ ...prev, mood: [...prev.mood.filter(m => m.date !== todayStr), { date: todayStr, level }] }))
-  }
+  }, [setState])
 
-  const handleMonthChange = (month: string) => {
-    if (month !== state.currentMonth) {
-      setState(prev => ({
+  const handleMonthChange = useCallback((month: string) => {
+    setState(prev => {
+      if (month === prev.currentMonth) return prev
+      return {
         ...prev,
         monthlyHistory: { ...prev.monthlyHistory, [prev.currentMonth]: { ...prev.income } },
         currentMonth: month,
         income: prev.monthlyHistory[month] || {},
-      }))
-    }
-  }
+      }
+    })
+  }, [setState])
 
-  const handlePhaseCheckToggle = (id: string) => {
+  const handlePhaseCheckToggle = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       phaseChecks: { ...prev.phaseChecks, [id]: !prev.phaseChecks?.[id] },
     }))
-  }
-
-  const todayStr = getTodayStr()
-  const todayDeepWorkMinutes = (state.pomodoroSessions || [])
-    .filter(s => s.completedAt.startsWith(todayStr) && s.type === 'work')
-    .reduce((sum, s) => sum + Math.floor(s.duration / 60), 0)
+  }, [setState])
 
   // ── v6 utility handlers ─────────────────────────────────────────────────
-  const handleAddProposal = (p: UpworkProposal) =>
-    setState(prev => ({ ...prev, upworkProposals: [...(prev.upworkProposals || []), p] }))
-  const handleUpdateProposal = (id: string, updates: Partial<UpworkProposal>) =>
-    setState(prev => ({ ...prev, upworkProposals: (prev.upworkProposals || []).map(p => p.id === id ? { ...p, ...updates } : p) }))
-  const handleRemoveProposal = (id: string) =>
-    setState(prev => ({ ...prev, upworkProposals: (prev.upworkProposals || []).filter(p => p.id !== id) }))
+  const handleAddProposal = useCallback((p: UpworkProposal) =>
+    setState(prev => ({ ...prev, upworkProposals: [...(prev.upworkProposals || []), p] })), [setState])
 
-  const handleAddSpeed = (entry: SpeedEntry) =>
-    setState(prev => ({ ...prev, speedLog: [...(prev.speedLog || []), entry] }))
-  const handleRemoveSpeed = (id: string) =>
-    setState(prev => ({ ...prev, speedLog: (prev.speedLog || []).filter(e => e.id !== id) }))
+  const handleUpdateProposal = useCallback((id: string, updates: Partial<UpworkProposal>) =>
+    setState(prev => ({ ...prev, upworkProposals: (prev.upworkProposals || []).map(p => p.id === id ? { ...p, ...updates } : p) })), [setState])
+
+  const handleRemoveProposal = useCallback((id: string) =>
+    setState(prev => ({ ...prev, upworkProposals: (prev.upworkProposals || []).filter(p => p.id !== id) })), [setState])
+
+  const handleAddSpeed = useCallback((entry: SpeedEntry) =>
+    setState(prev => ({ ...prev, speedLog: [...(prev.speedLog || []), entry] })), [setState])
+
+  const handleRemoveSpeed = useCallback((id: string) =>
+    setState(prev => ({ ...prev, speedLog: (prev.speedLog || []).filter(e => e.id !== id) })), [setState])
 
   // ── v5 handlers ────────────────────────────────────────────────────────
-  const handleToggleResilience = (id: string) => {
+  const handleToggleResilience = useCallback((id: string) => {
     setState(prev => ({ ...prev, resilience: { ...prev.resilience, [id]: !prev.resilience?.[id] } }))
-  }
+  }, [setState])
 
-  const handleAddProduct = (p: AmazonProduct) => {
+  const handleAddProduct = useCallback((p: AmazonProduct) => {
     setState(prev => ({ ...prev, amazonProducts: [...(prev.amazonProducts || []), p] }))
-  }
+  }, [setState])
 
-  const handleUpdateProduct = (id: string, updates: Partial<AmazonProduct>) => {
+  const handleUpdateProduct = useCallback((id: string, updates: Partial<AmazonProduct>) => {
     setState(prev => ({ ...prev, amazonProducts: (prev.amazonProducts || []).map(p => p.id === id ? { ...p, ...updates } : p) }))
-  }
+  }, [setState])
 
-  const handleRemoveProduct = (id: string) => {
+  const handleRemoveProduct = useCallback((id: string) => {
     setState(prev => ({ ...prev, amazonProducts: (prev.amazonProducts || []).filter(p => p.id !== id) }))
-  }
+  }, [setState])
 
-  const handleToggleEventCheck = (id: string) => {
+  const handleToggleEventCheck = useCallback((id: string) => {
     setState(prev => ({ ...prev, eventChecks: { ...prev.eventChecks, [id]: !prev.eventChecks?.[id] } }))
-  }
+  }, [setState])
 
-  const handleToggleSpiceRoadmap = (id: string) => {
+  const handleToggleSpiceRoadmap = useCallback((id: string) => {
     setState(prev => ({ ...prev, phaseChecks: { ...prev.phaseChecks, [id]: !prev.phaseChecks?.[id] } }))
-  }
+  }, [setState])
 
   // ── New feature handlers ────────────────────────────────────────────────
-  const handleSaveReview = (review: import('@/lib/data').WeeklyReview) => {
+  const handleSaveReview = useCallback((review: WeeklyReview) => {
     setState(prev => ({ ...prev, weeklyReviews: [...(prev.weeklyReviews || []), review] }))
-  }
+  }, [setState])
 
-  const handleAddContact = (contact: import('@/lib/data').Contact) => {
+  const handleAddContact = useCallback((contact: Contact) => {
     setState(prev => ({ ...prev, contacts: [...(prev.contacts || []), contact] }))
-  }
+  }, [setState])
 
-  const handleUpdateContact = (id: string, updates: Partial<import('@/lib/data').Contact>) => {
+  const handleUpdateContact = useCallback((id: string, updates: Partial<Contact>) => {
     setState(prev => ({ ...prev, contacts: (prev.contacts || []).map(c => c.id === id ? { ...c, ...updates } : c) }))
-  }
+  }, [setState])
 
-  const handleRemoveContact = (id: string) => {
+  const handleRemoveContact = useCallback((id: string) => {
     setState(prev => ({ ...prev, contacts: (prev.contacts || []).filter(c => c.id !== id) }))
-  }
+  }, [setState])
 
-  const handleAddDecision = (decision: import('@/lib/data').Decision) => {
+  const handleAddDecision = useCallback((decision: Decision) => {
     setState(prev => ({ ...prev, decisions: [...(prev.decisions || []), decision] }))
-  }
+  }, [setState])
 
-  const handleUpdateOutcome = (id: string, outcome: string) => {
+  const handleUpdateOutcome = useCallback((id: string, outcome: string) => {
     setState(prev => ({ ...prev, decisions: (prev.decisions || []).map(d => d.id === id ? { ...d, outcome } : d) }))
-  }
+  }, [setState])
 
-  const handleSaveCapital = (entry: import('@/lib/data').CapitalEntry) => {
+  const handleSaveCapital = useCallback((entry: CapitalEntry) => {
     setState(prev => {
       const filtered = (prev.capitalHistory || []).filter(e => e.month !== entry.month)
       return { ...prev, capitalHistory: [...filtered, entry] }
     })
-  }
+  }, [setState])
 
-  const handleAddGoal = (goal: import('@/lib/data').Goal) => {
+  const handleAddGoal = useCallback((goal: Goal) => {
     setState(prev => ({ ...prev, goals: [...(prev.goals || []), goal] }))
-  }
+  }, [setState])
 
-  const handleUpdateGoal = (id: string, updates: Partial<import('@/lib/data').Goal>) => {
+  const handleUpdateGoal = useCallback((id: string, updates: Partial<Goal>) => {
     setState(prev => ({ ...prev, goals: (prev.goals || []).map(g => g.id === id ? { ...g, ...updates } : g) }))
-  }
+  }, [setState])
 
-  const handleRemoveGoal = (id: string) => {
+  const handleRemoveGoal = useCallback((id: string) => {
     setState(prev => ({ ...prev, goals: (prev.goals || []).filter(g => g.id !== id) }))
-  }
+  }, [setState])
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
