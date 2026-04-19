@@ -1,18 +1,20 @@
 /**
  * Vault encryption using Web Crypto API (AES-256-GCM)
  * Key derivation via PBKDF2 with 310,000 iterations (OWASP 2023 recommendation)
- * 
+ *
  * Security model:
- * - Master password never stored anywhere
+ * - Master password NEVER stored — not even in memory beyond the unlock call
+ * - Session holds a non-extractable CryptoKey only; raw bytes cannot be read back
  * - Derived key never persisted to localStorage
  * - Only encrypted ciphertext + salt + IV stored
- * - Session-only: key lives in memory, cleared on tab close
+ * - Auto-locks after 5 minutes of inactivity
  */
 
 const PBKDF2_ITERATIONS = 310_000
 const KEY_LENGTH = 256
 const VAULT_STORAGE_KEY = 'grenada_vault_encrypted'
-const VAULT_HASH_KEY = 'grenada_vault_hash'  // stores password verifier, not the key
+const VAULT_HASH_KEY = 'grenada_vault_hash'
+const AUTO_LOCK_MS = 5 * 60 * 1000
 
 // ─── ENCODING HELPERS ────────────────────────────────────────────────────────
 
@@ -25,6 +27,18 @@ function base64ToBuffer(b64: string): ArrayBuffer {
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
   return bytes.buffer
+}
+
+// ─── TIMING-SAFE COMPARISON ───────────────────────────────────────────────────
+// XOR-based constant-time comparison — prevents timing oracle on hash values.
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
 }
 
 // ─── KEY DERIVATION ───────────────────────────────────────────────────────────
@@ -42,76 +56,57 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
     { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
     keyMaterial,
     { name: 'AES-GCM', length: KEY_LENGTH },
-    false,
+    false,   // non-extractable — raw bytes can never be read back
     ['encrypt', 'decrypt']
   )
 }
 
-// ─── ENCRYPT ─────────────────────────────────────────────────────────────────
+// ─── SESSION ──────────────────────────────────────────────────────────────────
+// Holds a non-extractable CryptoKey — NOT the password string.
 
-export async function encryptVault(data: unknown, password: string): Promise<void> {
+interface VaultSession {
+  key: CryptoKey
+  salt: string  // base64 salt tied to this key derivation
+}
+
+let _session: VaultSession | null = null
+let _lockTimer: ReturnType<typeof setTimeout> | null = null
+
+// ─── VAULT INIT (first-time setup or password change) ────────────────────────
+
+export async function initVault(password: string): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16))
-  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const saltB64 = bufferToBase64(salt.buffer)
   const key = await deriveKey(password, salt)
 
+  // Write empty credentials array as the initial vault contents
+  const iv = crypto.getRandomValues(new Uint8Array(12))
   const enc = new TextEncoder()
-  const plaintext = enc.encode(JSON.stringify(data))
-
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     key,
-    plaintext
+    enc.encode(JSON.stringify([]))
   )
-
-  const payload = {
-    salt: bufferToBase64(salt.buffer),
+  localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify({
+    salt: saltB64,
     iv: bufferToBase64(iv.buffer),
     data: bufferToBase64(ciphertext),
     version: 1,
-  }
+  }))
 
-  localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(payload))
-
-  // Store a password verifier — a hash of (password + salt) used only to
-  // validate the password on unlock WITHOUT storing the password itself
-  const verifier = await crypto.subtle.digest(
-    'SHA-256',
-    enc.encode(password + bufferToBase64(salt.buffer))
-  )
+  // Store a password verifier — SHA-256(password + salt) — for quick unlock check.
+  // This is NOT the encryption key; it only tells us if the password is correct.
+  const verifier = await crypto.subtle.digest('SHA-256', enc.encode(password + saltB64))
   localStorage.setItem(VAULT_HASH_KEY, bufferToBase64(verifier))
+
+  _session = { key, salt: saltB64 }
+  resetLockTimer()
 }
 
-// ─── DECRYPT ─────────────────────────────────────────────────────────────────
+// ─── UNLOCK ───────────────────────────────────────────────────────────────────
+// Returns true on success and establishes the session (CryptoKey stored).
 
-export async function decryptVault<T>(password: string): Promise<T | null> {
-  const raw = localStorage.getItem(VAULT_STORAGE_KEY)
-  if (!raw) return null
-
-  try {
-    const payload = JSON.parse(raw) as { salt: string; iv: string; data: string; version: number }
-    const salt = new Uint8Array(base64ToBuffer(payload.salt))
-    const iv = new Uint8Array(base64ToBuffer(payload.iv))
-    const ciphertext = base64ToBuffer(payload.data)
-    const key = await deriveKey(password, salt)
-
-    const plaintext = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      ciphertext
-    )
-
-    const dec = new TextDecoder()
-    return JSON.parse(dec.decode(plaintext)) as T
-  } catch {
-    // Wrong password or corrupted data
-    return null
-  }
-}
-
-// ─── PASSWORD VERIFICATION ────────────────────────────────────────────────────
-// Quick check before attempting full decryption
-
-export async function verifyPassword(password: string): Promise<boolean> {
+export async function unlockVault(password: string): Promise<boolean> {
   const raw = localStorage.getItem(VAULT_STORAGE_KEY)
   const storedHash = localStorage.getItem(VAULT_HASH_KEY)
   if (!raw || !storedHash) return false
@@ -119,20 +114,78 @@ export async function verifyPassword(password: string): Promise<boolean> {
   try {
     const payload = JSON.parse(raw) as { salt: string }
     const enc = new TextEncoder()
-    const verifier = await crypto.subtle.digest(
-      'SHA-256',
-      enc.encode(password + payload.salt)
-    )
-    return bufferToBase64(verifier) === storedHash
+    const verifier = await crypto.subtle.digest('SHA-256', enc.encode(password + payload.salt))
+
+    if (!timingSafeEqual(bufferToBase64(verifier), storedHash)) return false
+
+    const salt = new Uint8Array(base64ToBuffer(payload.salt))
+    const key = await deriveKey(password, salt)
+    _session = { key, salt: payload.salt }
+    resetLockTimer()
+    return true
   } catch {
     return false
   }
 }
 
-// ─── VAULT STATE CHECKS ───────────────────────────────────────────────────────
+// ─── ENCRYPT (uses stored session key — password not needed) ─────────────────
+
+export async function encryptVault(data: unknown): Promise<void> {
+  if (!_session) throw new Error('Vault is locked')
+
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const enc = new TextEncoder()
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    _session.key,
+    enc.encode(JSON.stringify(data))
+  )
+
+  localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify({
+    salt: _session.salt,
+    iv: bufferToBase64(iv.buffer),
+    data: bufferToBase64(ciphertext),
+    version: 1,
+  }))
+}
+
+// ─── DECRYPT (uses stored session key — password not needed) ─────────────────
+
+export async function decryptVault<T>(): Promise<T | null> {
+  if (!_session) return null
+
+  const raw = localStorage.getItem(VAULT_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    const payload = JSON.parse(raw) as { iv: string; data: string }
+    const iv = new Uint8Array(base64ToBuffer(payload.iv))
+    const ciphertext = base64ToBuffer(payload.data)
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      _session.key,
+      ciphertext
+    )
+    return JSON.parse(new TextDecoder().decode(plaintext)) as T
+  } catch {
+    return null
+  }
+}
+
+// ─── VAULT STATE ──────────────────────────────────────────────────────────────
 
 export function vaultExists(): boolean {
   return !!localStorage.getItem(VAULT_STORAGE_KEY)
+}
+
+export function isVaultUnlocked(): boolean {
+  return _session !== null
+}
+
+export function lockVault(): void {
+  _session = null
+  if (_lockTimer) clearTimeout(_lockTimer)
+  _lockTimer = null
 }
 
 export function clearVault(): void {
@@ -140,40 +193,13 @@ export function clearVault(): void {
   localStorage.removeItem(VAULT_HASH_KEY)
 }
 
-// ─── SESSION KEY STORE ────────────────────────────────────────────────────────
-// The decrypted key lives only in memory — never in localStorage
-
-let _sessionKey: string | null = null
-let _lockTimer: ReturnType<typeof setTimeout> | null = null
-const AUTO_LOCK_MS = 5 * 60 * 1000  // 5 minutes
-
-export function setSessionKey(password: string): void {
-  _sessionKey = password
-  resetLockTimer()
-}
-
-export function getSessionKey(): string | null {
-  return _sessionKey
-}
-
-export function lockVault(): void {
-  _sessionKey = null
-  if (_lockTimer) clearTimeout(_lockTimer)
-  _lockTimer = null
-}
-
 export function resetLockTimer(): void {
   if (_lockTimer) clearTimeout(_lockTimer)
   _lockTimer = setTimeout(() => {
-    _sessionKey = null
+    _session = null
     _lockTimer = null
-    // Dispatch event so UI can react
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('vault-locked'))
     }
   }, AUTO_LOCK_MS)
-}
-
-export function isVaultUnlocked(): boolean {
-  return _sessionKey !== null
 }

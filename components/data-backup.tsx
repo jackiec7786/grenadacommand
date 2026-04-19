@@ -26,12 +26,26 @@ export function DataBackup({ state, onImport }: DataBackupProps) {
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+    if (file.size > MAX_SIZE_BYTES) {
+      setImportError('File too large. Maximum backup size is 5 MB.')
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target?.result as string)
-        // Basic validation — must have at least income and currentPhase
-        if (typeof parsed.currentPhase !== 'number' || typeof parsed.income !== 'object') {
+        if (
+          typeof parsed !== 'object' || parsed === null || Array.isArray(parsed) ||
+          typeof parsed.currentPhase !== 'number' ||
+          typeof parsed.income !== 'object' || parsed.income === null ||
+          typeof parsed.milestones !== 'object' || parsed.milestones === null ||
+          typeof parsed.tasks !== 'object' || parsed.tasks === null ||
+          !Array.isArray(parsed.mood)
+        ) {
           setImportError('Invalid backup file. Make sure you are importing a Grenada Command Center backup.')
           return
         }

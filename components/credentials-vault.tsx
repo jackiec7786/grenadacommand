@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Eye, EyeOff, Copy, Trash2, Check, Lock, Unlock, Shield, AlertTriangle } from 'lucide-react'
 import {
-  encryptVault, decryptVault, verifyPassword,
-  vaultExists, clearVault,
-  setSessionKey, getSessionKey, lockVault,
+  initVault, unlockVault, encryptVault, decryptVault,
+  vaultExists, clearVault, lockVault,
   isVaultUnlocked, resetLockTimer,
 } from '@/lib/vault-crypto'
 import type { Credential } from '@/lib/data'
@@ -45,7 +44,12 @@ export function CredentialsVault(_: CredentialsVaultProps) {
   // Password fields
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [showMasterPw, setShowMasterPw] = useState(false)
+
+  // Rate limiting
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [lockedOut, setLockedOut] = useState(false)
+  const MAX_ATTEMPTS = 5
 
   // Vault UI state
   const [showForm, setShowForm] = useState(false)
@@ -92,18 +96,14 @@ export function CredentialsVault(_: CredentialsVaultProps) {
   }
 
   const restoreSession = async () => {
-    const key = getSessionKey()
-    if (!key) { setView('locked'); return }
-    const data = await decryptVault<Credential[]>(key)
+    const data = await decryptVault<Credential[]>()
     if (data) { setCredentials(data); setView('unlocked') }
     else { lockVault(); setView('locked') }
   }
 
   // ── SAVE helper — always re-encrypt after any change ────────────────────
   const saveCredentials = useCallback(async (updated: Credential[]) => {
-    const key = getSessionKey()
-    if (!key) return
-    await encryptVault(updated, key)
+    await encryptVault(updated)
     setCredentials(updated)
   }, [])
 
@@ -113,8 +113,7 @@ export function CredentialsVault(_: CredentialsVaultProps) {
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return }
     setLoading(true)
-    await encryptVault([], password)
-    setSessionKey(password)
+    await initVault(password)
     setCredentials([])
     setView('unlocked')
     setPassword(''); setConfirmPassword('')
@@ -123,16 +122,28 @@ export function CredentialsVault(_: CredentialsVaultProps) {
 
   // ── UNLOCK ───────────────────────────────────────────────────────────────
   const handleUnlock = async () => {
+    if (lockedOut) return
     setError('')
     setLoading(true)
-    const ok = await verifyPassword(password)
-    if (!ok) { setError('Incorrect password.'); setLoading(false); return }
-    const data = await decryptVault<Credential[]>(password)
-    if (data === null) { setError('Could not decrypt vault. Password may be wrong.'); setLoading(false); return }
-    setSessionKey(password)
+    const ok = await unlockVault(password)
+    if (!ok) {
+      const next = failedAttempts + 1
+      setFailedAttempts(next)
+      if (next >= MAX_ATTEMPTS) {
+        setLockedOut(true)
+        setError(`Too many failed attempts. Reload the page to try again.`)
+      } else {
+        setError(`Incorrect password. ${MAX_ATTEMPTS - next} attempt${MAX_ATTEMPTS - next === 1 ? '' : 's'} remaining.`)
+      }
+      setLoading(false)
+      return
+    }
+    const data = await decryptVault<Credential[]>()
+    if (data === null) { setError('Could not decrypt vault.'); setLoading(false); return }
     setCredentials(data)
     setView('unlocked')
     setPassword('')
+    setFailedAttempts(0)
     setLoading(false)
   }
 
@@ -210,15 +221,15 @@ export function CredentialsVault(_: CredentialsVaultProps) {
             <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.1em] mb-1.5">Master Password</div>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showMasterPw ? 'text' : 'password'}
                 className="w-full bg-dim border border-border text-text font-mono text-sm px-3 py-2.5 rounded-sm focus:outline-none focus:border-warn pr-10"
                 placeholder="Minimum 8 characters"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && confirmPassword && handleSetup()}
               />
-              <button onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-text cursor-pointer">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button onClick={() => setShowMasterPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-text cursor-pointer">
+                {showMasterPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {password.length > 0 && (
@@ -236,7 +247,7 @@ export function CredentialsVault(_: CredentialsVaultProps) {
           <div>
             <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.1em] mb-1.5">Confirm Password</div>
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showMasterPw ? 'text' : 'password'}
               className="w-full bg-dim border border-border text-text font-mono text-sm px-3 py-2.5 rounded-sm focus:outline-none focus:border-warn"
               placeholder="Repeat password"
               value={confirmPassword}
@@ -287,7 +298,7 @@ export function CredentialsVault(_: CredentialsVaultProps) {
         <div className="space-y-3">
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showMasterPw ? 'text' : 'password'}
               className="w-full bg-dim border border-border text-text font-mono text-sm px-3 py-2.5 rounded-sm focus:outline-none focus:border-warn pr-10"
               placeholder="Master password"
               value={password}
@@ -295,8 +306,8 @@ export function CredentialsVault(_: CredentialsVaultProps) {
               onKeyDown={e => e.key === 'Enter' && handleUnlock()}
               autoFocus
             />
-            <button onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-text cursor-pointer">
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <button onClick={() => setShowMasterPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-text cursor-pointer">
+              {showMasterPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
 
@@ -309,7 +320,7 @@ export function CredentialsVault(_: CredentialsVaultProps) {
 
           <button
             onClick={handleUnlock}
-            disabled={loading || !password}
+            disabled={loading || !password || lockedOut}
             className="w-full py-3 rounded-sm font-mono text-[11px] uppercase tracking-[0.15em] font-semibold cursor-pointer transition-all disabled:opacity-40"
             style={{ background: 'var(--warn)', color: 'var(--bg)' }}
           >
