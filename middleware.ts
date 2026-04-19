@@ -1,21 +1,17 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getIronSession } from 'iron-session'
-import type { SessionData } from '@/lib/session'
-import { SESSION_OPTIONS } from '@/lib/session-config'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export function middleware(req: NextRequest) {
+  if (req.nextUrl.pathname.startsWith('/sign-in')) {
+    return NextResponse.next()
+  }
 
-  if (req.nextUrl.pathname.startsWith('/sign-in')) return res
-
-  const session = await getIronSession<SessionData>(req.cookies, res.cookies, SESSION_OPTIONS)
-
-  if (!session.isLoggedIn) {
+  const hasSession = req.cookies.has('grenada_session')
+  if (!hasSession) {
     return NextResponse.redirect(new URL('/sign-in', req.url))
   }
 
-  return res
+  return NextResponse.next()
 }
 
 export const config = {
