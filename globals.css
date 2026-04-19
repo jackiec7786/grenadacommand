@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource/syne/400.css';
+@import '@fontsource/syne/600.css';
+@import '@fontsource/syne/700.css';
+@import '@fontsource/syne/800.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --bg: #0a0e0d;
+  --surface: #111815;
+  --surface2: #172018;
+  --border: #1e2e22;
+  --accent: #2dff6e;
+  --accent2: #00c4a0;
+  --warn: #ff8c42;
+  --danger: #ff4457;
+  --text: #e8f5ec;
+  --muted: #5a7a62;
+  --dim: #2a3d2e;
+  --purple: #a78bfa;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--bg);
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--text);
+  --muted-bg: var(--dim);
+  --muted-foreground: var(--muted);
+  --accent-bg: var(--accent);
+  --accent-foreground: var(--bg);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--bg);
+  --input: var(--dim);
+  --ring: var(--accent);
+  --radius: 0.375rem;
+}
+
+@theme inline {
+  --font-sans: 'Syne', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted-bg);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent-bg);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-accent2: var(--accent2);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-text: var(--text);
+  --color-muted-color: var(--muted);
+  --color-dim: var(--dim);
+  --color-purple: var(--purple);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-bg text-text font-sans antialiased min-h-screen overflow-x-hidden;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+  }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-slide-in {
+  animation: fadeSlideIn 0.4s ease both;
+}
