@@ -223,7 +223,7 @@ export default function GrenadaCommandCenter() {
         </div>
         <div className="text-right max-[700px]:text-left flex flex-col items-end max-[700px]:items-start gap-2">
           <div
-            className="inline-block text-bg text-[10px] font-bold font-mono tracking-[0.15em] px-2.5 py-1 rounded-sm uppercase"
+            className="inline-block text-white text-[10px] font-bold font-mono tracking-[0.15em] px-2.5 py-1 rounded-sm uppercase"
             style={{ background: config.cssColor }}
           >
             {PHASE_LABELS[state.currentPhase]}
