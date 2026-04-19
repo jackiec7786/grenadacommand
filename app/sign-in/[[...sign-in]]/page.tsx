@@ -1,28 +1,31 @@
 "use client"
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export default function SignInPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    })
-    if (res.ok) {
-      router.push('/')
-      router.refresh()
-    } else {
-      setError('Incorrect password.')
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        window.location.href = '/'
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Incorrect password.')
+        setLoading(false)
+      }
+    } catch {
+      setError('Network error. Please try again.')
       setLoading(false)
     }
   }
