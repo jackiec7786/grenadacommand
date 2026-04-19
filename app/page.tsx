@@ -3,7 +3,7 @@
 import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { useServerState } from '@/hooks/use-server-state'
+import { useLocalStorage } from '@/hooks/use-local-storage'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
@@ -65,26 +65,9 @@ const TABS: { id: Tab; label: string }[] = [
 
 function getTodayStr() { return new Date().toISOString().slice(0, 10) }
 
-function LoadingSkeleton() {
-  return (
-    <div className="max-w-[1100px] mx-auto px-5 py-6 space-y-4">
-      <div className="h-16 bg-surface rounded-md border border-border animate-pulse" />
-      <div className="flex gap-1">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-8 w-20 bg-dim rounded-sm animate-pulse" />
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-48 bg-surface rounded-md border border-border animate-pulse" />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export default function GrenadaCommandCenter() {
-  const [state, setState, loading] = useServerState()
+  const [state, setState] = useLocalStorage<AppState>('grenada_state', DEFAULT_STATE)
   const [activeTab, setActiveTab] = useState<Tab>('today')
   const router = useRouter()
 
@@ -93,8 +76,6 @@ export default function GrenadaCommandCenter() {
     router.push('/sign-in')
     router.refresh()
   }
-
-  if (loading) return <LoadingSkeleton />
 
   const totalIncome = useMemo(
     () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
