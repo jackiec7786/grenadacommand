@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 
-const CURRENCIES = [
-  { code: 'USD', symbol: '$',  name: 'US Dollar',           flag: '🇺🇸', rateToUSD: 1 },
-  { code: 'XCD', symbol: 'EC$',name: 'EC Dollar (Grenada)',  flag: '🇬🇩', rateToUSD: 2.70 },  // Fixed peg
-  { code: 'GBP', symbol: '£',  name: 'British Pound',       flag: '🇬🇧', rateToUSD: 0.787 },
-  { code: 'EUR', symbol: '€',  name: 'Euro',                flag: '🇪🇺', rateToUSD: 0.923 },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar',     flag: '🇨🇦', rateToUSD: 1.365 },
-  { code: 'TTD', symbol: 'TT$',name: 'Trinidad Dollar',     flag: '🇹🇹', rateToUSD: 6.78 },
+const BASE_CURRENCIES = [
+  { code: 'USD', symbol: '$',   name: 'US Dollar',          flag: '🇺🇸', fallback: 1 },
+  { code: 'XCD', symbol: 'EC$', name: 'EC Dollar (Grenada)', flag: '🇬🇩', fallback: 2.70 }, // Fixed peg
+  { code: 'GBP', symbol: '£',   name: 'British Pound',      flag: '🇬🇧', fallback: 0.787 },
+  { code: 'EUR', symbol: '€',   name: 'Euro',               flag: '🇪🇺', fallback: 0.923 },
+  { code: 'CAD', symbol: 'C$',  name: 'Canadian Dollar',    flag: '🇨🇦', fallback: 1.365 },
+  { code: 'TTD', symbol: 'TT$', name: 'Trinidad Dollar',    flag: '🇹🇹', fallback: 6.78 },
 ]
 
 const QUICK_AMOUNTS = [10, 25, 50, 100, 250, 500, 1000]
@@ -17,21 +17,29 @@ export function CurrencyConverter() {
   const [amount, setAmount] = useState('100')
   const [fromCurrency, setFromCurrency] = useState('USD')
   const [toCurrency, setToCurrency] = useState('XCD')
+  const [rates, setRates] = useState<Record<string, number> | null>(null)
 
-  const amountN = parseFloat(amount) || 0
-  const from = CURRENCIES.find(c => c.code === fromCurrency)!
-  const to = CURRENCIES.find(c => c.code === toCurrency)!
+  useEffect(() => {
+    fetch('/api/rates')
+      .then(r => r.json())
+      .then((data: Record<string, number> | null) => { if (data) setRates(data) })
+      .catch(() => {})
+  }, [])
 
-  // Convert via USD
-  const inUSD = amountN / from.rateToUSD
-  const result = inUSD * to.rateToUSD
-
-  const swap = () => {
-    setFromCurrency(toCurrency)
-    setToCurrency(fromCurrency)
+  const getRate = (code: string) => {
+    if (code === 'XCD') return 2.70 // Always use fixed peg
+    if (rates) return rates[code] ?? BASE_CURRENCIES.find(c => c.code === code)!.fallback
+    return BASE_CURRENCIES.find(c => c.code === code)!.fallback
   }
 
-  // Grenada context labels
+  const amountN = parseFloat(amount) || 0
+  const from = BASE_CURRENCIES.find(c => c.code === fromCurrency)!
+  const to = BASE_CURRENCIES.find(c => c.code === toCurrency)!
+  const inUSD = amountN / getRate(fromCurrency)
+  const result = inUSD * getRate(toCurrency)
+
+  const swap = () => { setFromCurrency(toCurrency); setToCurrency(fromCurrency) }
+
   const contextLabel = () => {
     if (fromCurrency === 'USD' && toCurrency === 'XCD') {
       const ecd = result
@@ -50,7 +58,13 @@ export function CurrencyConverter() {
 
   return (
     <div className="bg-surface border border-border rounded-md p-5" style={{ borderTopWidth: 2, borderTopColor: 'var(--accent)' }}>
-      <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase mb-4">// Currency Converter</div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">// Currency Converter</div>
+        {rates
+          ? <span className="text-[9px] font-mono text-primary">● Live rates</span>
+          : <span className="text-[9px] font-mono text-muted-foreground">Fallback rates</span>
+        }
+      </div>
 
       {/* Amount input */}
       <div className="mb-4">
@@ -69,50 +83,24 @@ export function CurrencyConverter() {
 
       {/* Currency pair selectors */}
       <div className="flex items-center gap-2 mb-4">
-        <select
-          className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary"
-          value={fromCurrency}
-          onChange={e => setFromCurrency(e.target.value)}
-        >
-          {CURRENCIES.map(c => (
-            <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>
-          ))}
+        <select className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary" value={fromCurrency} onChange={e => setFromCurrency(e.target.value)}>
+          {BASE_CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
         </select>
-
-        <button
-          onClick={swap}
-          className="p-2 rounded-sm border border-border text-muted-foreground hover:text-text hover:border-muted-foreground transition-all cursor-pointer shrink-0"
-        >
-          ⇄
-        </button>
-
-        <select
-          className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary"
-          value={toCurrency}
-          onChange={e => setToCurrency(e.target.value)}
-        >
-          {CURRENCIES.map(c => (
-            <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>
-          ))}
+        <button onClick={swap} className="p-2 rounded-sm border border-border text-muted-foreground hover:text-text hover:border-muted-foreground transition-all cursor-pointer shrink-0">⇄</button>
+        <select className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary" value={toCurrency} onChange={e => setToCurrency(e.target.value)}>
+          {BASE_CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
         </select>
       </div>
 
       {/* Result */}
-      <div
-        className="p-4 rounded-md border mb-4 text-center"
-        style={{ borderColor: 'var(--accent)30', background: 'var(--accent)06' }}
-      >
-        <div className="font-mono text-[11px] text-muted-foreground mb-1">
-          {amountN} {fromCurrency} =
-        </div>
+      <div className="p-4 rounded-md border mb-4 text-center" style={{ borderColor: 'var(--accent)30', background: 'var(--accent)06' }}>
+        <div className="font-mono text-[11px] text-muted-foreground mb-1">{amountN} {fromCurrency} =</div>
         <div className="font-mono text-[36px] font-extrabold text-primary leading-none">
           {to.symbol}{result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className="font-mono text-[11px] text-muted-foreground mt-1">{toCurrency}</div>
         {context && (
-          <div className="font-mono text-[10px] text-muted-foreground mt-2 pt-2 border-t border-border">
-            {context}
-          </div>
+          <div className="font-mono text-[10px] text-muted-foreground mt-2 pt-2 border-t border-border">{context}</div>
         )}
       </div>
 
@@ -121,28 +109,19 @@ export function CurrencyConverter() {
         <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.1em] mb-2">Quick amounts ({fromCurrency})</div>
         <div className="flex flex-wrap gap-1.5">
           {QUICK_AMOUNTS.map(a => (
-            <button
-              key={a}
-              onClick={() => setAmount(String(a))}
-              className="text-[10px] font-mono px-2.5 py-1 rounded-sm border cursor-pointer transition-all"
-              style={parseFloat(amount) === a
-                ? { background: 'var(--accent)', color: 'var(--bg)', borderColor: 'var(--accent)' }
-                : { borderColor: 'var(--border)', color: 'var(--muted)' }
-              }
-            >
+            <button key={a} onClick={() => setAmount(String(a))} className="text-[10px] font-mono px-2.5 py-1 rounded-sm border cursor-pointer transition-all" style={parseFloat(amount) === a ? { background: 'var(--accent)', color: 'var(--bg)', borderColor: 'var(--accent)' } : { borderColor: 'var(--border)', color: 'var(--muted)' }}>
               {from.symbol}{a}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Rate notes */}
       <div className="mt-4 pt-3 border-t border-border space-y-1">
         <div className="text-[9px] font-mono text-muted-foreground">
           🔒 USD/XCD is fixed at 2.70 — Eastern Caribbean Currency Union peg, permanent
         </div>
         <div className="text-[9px] font-mono text-muted-foreground">
-          Other rates are approximate — check Wise for exact transfer rates before moving money
+          {rates ? 'Rates updated every 6 hours — check Wise before moving money' : 'Using fallback rates — check Wise for exact transfer rates'}
         </div>
       </div>
     </div>

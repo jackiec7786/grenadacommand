@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react'
 import { Plus, Eye, EyeOff, Copy, Trash2, Check, Shield } from 'lucide-react'
 import type { Credential } from '@/lib/data'
 
-const STORAGE_KEY = 'grenada_credentials'
-
 const PLATFORM_CATEGORIES = [
   'Call Center / Jobs', 'Freelance Income', 'Business / Banking',
   'E-Commerce', 'Research / Studies', 'Hosting / Tools', 'Other',
@@ -40,18 +38,13 @@ export function CredentialsVault() {
   })
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) setCredentials(JSON.parse(stored))
-    } catch {}
+    fetch('/api/credentials')
+      .then(r => r.json())
+      .then((data: Credential[]) => { if (Array.isArray(data)) setCredentials(data) })
+      .catch(() => {})
   }, [])
 
-  const save = (updated: Credential[]) => {
-    setCredentials(updated)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  }
-
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.platform.trim()) return
     const newCred: Credential = {
       id: `cred-${Date.now()}`,
@@ -60,14 +53,20 @@ export function CredentialsVault() {
       password: form.password, accountNumber: form.accountNumber,
       notes: form.notes, url: form.url,
     }
-    save([newCred, ...credentials])
+    setCredentials(prev => [newCred, ...prev])
     setForm({ platform: '', category: 'Call Center / Jobs', username: '', email: '', password: '', accountNumber: '', notes: '', url: '' })
     setShowForm(false)
+    await fetch('/api/credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newCred),
+    })
   }
 
-  const handleRemove = (id: string) => {
-    save(credentials.filter(c => c.id !== id))
+  const handleRemove = async (id: string) => {
+    setCredentials(prev => prev.filter(c => c.id !== id))
     setShowDeleteConfirm(null)
+    await fetch(`/api/credentials/${id}`, { method: 'DELETE' })
   }
 
   const copyToClipboard = async (text: string, key: string) => {
@@ -85,7 +84,7 @@ export function CredentialsVault() {
           <Shield className="w-4 h-4 text-accent" />
           <div>
             <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">Credentials Vault</div>
-            <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{credentials.length} platforms stored locally</div>
+            <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{credentials.length} platforms stored</div>
           </div>
         </div>
         <button

@@ -2,8 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { useLocalStorage } from '@/hooks/use-local-storage'
+import { useServerState } from '@/hooks/use-server-state'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
@@ -66,16 +65,28 @@ const TABS: { id: Tab; label: string }[] = [
 function getTodayStr() { return new Date().toISOString().slice(0, 10) }
 
 
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="w-full max-w-5xl px-4 space-y-3">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="h-16 bg-surface rounded-md border border-border animate-pulse" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function GrenadaCommandCenter() {
-  const [state, setState] = useLocalStorage<AppState>('grenada_state', DEFAULT_STATE)
+  const [state, setState, loading] = useServerState()
   const [activeTab, setActiveTab] = useState<Tab>('today')
-  const router = useRouter()
 
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' })
-    router.push('/sign-in')
-    router.refresh()
+    window.location.href = '/sign-in'
   }
+
+  if (loading) return <LoadingSkeleton />
 
   const totalIncome = useMemo(
     () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
