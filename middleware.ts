@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { COOKIE_NAME } from '@/lib/auth-cookie'
 
 export function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/sign-in')) {
     return NextResponse.next()
   }
 
-  const hasSession = req.cookies.has('grenada_session')
+  const hasSession = req.cookies.has(COOKIE_NAME)
   if (!hasSession) {
     return NextResponse.redirect(new URL('/sign-in', req.url))
   }

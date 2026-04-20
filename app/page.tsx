@@ -19,6 +19,7 @@ import { MoodLog } from '@/components/mood-log'
 import { PlanWeekTracker } from '@/components/plan-week-tracker'
 import { DataBackup } from '@/components/data-backup'
 import { WorldClocks } from '@/components/world-clocks'
+import { WeatherWidget } from '@/components/weather-widget'
 import { ExpenseTracker } from '@/components/expense-tracker'
 import { SmartActionRecommender } from '@/components/smart-action-recommender'
 import { PomodoroTimer } from '@/components/pomodoro-timer'
@@ -296,6 +297,8 @@ export default function GrenadaCommandCenter() {
             onLogToday={handleLogToday}
           />
           <RunwaySection cash={state.cash} onCashChange={v => set('cash', v)} monthlyIncome={totalIncome} />
+
+          <WeatherWidget />
 
           <TwoCol>
             <WorldClocks />

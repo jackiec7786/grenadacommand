@@ -15,7 +15,6 @@ export function useServerState(): [AppState, Setter, boolean] {
       .then(r => r.json())
       .then((data: AppState | null) => {
         if (data === null) {
-          // First login — migrate from localStorage if data exists
           try {
             const local = localStorage.getItem('grenada_state')
             if (local) {
@@ -26,7 +25,7 @@ export function useServerState(): [AppState, Setter, boolean] {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: local,
-              })
+              }).catch(() => {})
               return
             }
           } catch {}
@@ -54,7 +53,7 @@ export function useServerState(): [AppState, Setter, boolean] {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(latestRef.current),
-        })
+        }).catch(() => {})
       }, 1000)
       return next
     })
