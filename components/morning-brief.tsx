@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from 'react'
 import { PHASE_CONFIGS, PHASE_INCOME_TARGETS, TASKS, type MoodEntry, type AppState } from '@/lib/data'
 
 interface MorningBriefProps {
@@ -25,6 +26,17 @@ const GREETINGS = [
 ]
 
 export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: MorningBriefProps) {
+  const [locationTz, setLocationTz] = useState({ timezone: 'America/Grenada', city: 'Grenada' })
+
+  useEffect(() => {
+    fetch('/api/location')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.timezone) setLocationTz({ timezone: data.timezone, city: data.city })
+      })
+      .catch(() => {})
+  }, [])
+
   const today = getTodayStr()
   const { week, month } = getPlanWeek(state.planStartDate || '')
   const config = PHASE_CONFIGS[state.currentPhase as keyof typeof PHASE_CONFIGS]
@@ -48,8 +60,8 @@ export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: Morn
   const moodColors = { green: 'var(--accent)', yellow: 'var(--warn)', red: 'var(--danger)' }
 
   const now = new Date()
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Grenada' })
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Grenada' })
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: locationTz.timezone })
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: locationTz.timezone })
 
   return (
     <div
@@ -60,7 +72,7 @@ export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: Morn
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="font-mono text-[32px] font-extrabold leading-none text-text">{timeStr}</div>
-          <div className="font-mono text-[11px] text-muted-foreground mt-1">{dateStr} · Grenada AST</div>
+          <div className="font-mono text-[11px] text-muted-foreground mt-1">{dateStr} · {locationTz.city}</div>
         </div>
         <div className="text-right">
           <div
