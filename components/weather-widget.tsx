@@ -2,6 +2,14 @@
 
 import { useState, useEffect } from 'react'
 
+interface LocationData {
+  city: string
+  country: string
+  timezone: string
+  lat: number
+  lon: number
+}
+
 interface WeatherData {
   temperature_2m: number
   apparent_temperature: number
@@ -24,11 +32,17 @@ function getCondition(code: number): { emoji: string; label: string } {
 }
 
 export function WeatherWidget() {
+  const [location, setLocation] = useState<LocationData | null>(null)
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/weather')
+    fetch('/api/location')
+      .then(r => r.json())
+      .then((loc: LocationData) => {
+        setLocation(loc)
+        return fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`)
+      })
       .then(r => r.json())
       .then((data: WeatherData | null) => { if (data) setWeather(data) })
       .catch(() => {})
@@ -36,11 +50,12 @@ export function WeatherWidget() {
   }, [])
 
   const condition = weather ? getCondition(weather.weather_code) : null
+  const locationLabel = location ? `${location.city}, ${location.country}` : 'Loading...'
 
   return (
     <div className="bg-surface border border-border rounded-md p-5" style={{ borderTopWidth: 2, borderTopColor: 'var(--accent)' }}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">// St. George's, Grenada</div>
+        <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">// {locationLabel}</div>
         {loading
           ? <span className="text-[9px] font-mono text-muted-foreground">Loading...</span>
           : weather
