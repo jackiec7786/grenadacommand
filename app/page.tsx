@@ -86,8 +86,6 @@ export default function GrenadaCommandCenter() {
     window.location.href = '/sign-in'
   }
 
-  if (loading) return <LoadingSkeleton />
-
   const totalIncome = useMemo(
     () => Object.values(state.income).reduce((s, v) => s + (v || 0), 0),
     [state.income]
@@ -230,6 +228,8 @@ export default function GrenadaCommandCenter() {
   }, [setState])
 
   // ── Render ──────────────────────────────────────────────────────────────
+  if (loading) return <LoadingSkeleton />
+
   return (
     <div className="relative z-[1] max-w-[1100px] mx-auto px-5 py-6">
 
