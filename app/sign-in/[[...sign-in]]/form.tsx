@@ -2,8 +2,13 @@
 
 import { useState } from 'react'
 
-export default function SignInForm({ hasError }: { hasError: boolean }) {
+export default function SignInForm({ errorCode }: { errorCode: string | null }) {
   const [loading, setLoading] = useState(false)
+
+  const errorMsg =
+    errorCode === 'locked' ? 'Too many attempts. Try again in 5 minutes.' :
+    errorCode ? 'Incorrect password.' :
+    null
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg">
@@ -23,14 +28,15 @@ export default function SignInForm({ hasError }: { hasError: boolean }) {
               className="w-full bg-dim border border-border text-text font-mono text-sm px-3 py-2.5 rounded-sm focus:outline-none focus:border-primary"
               placeholder="Enter password"
               autoFocus
+              disabled={errorCode === 'locked'}
             />
           </div>
-          {hasError && (
-            <div className="text-[11px] font-mono text-danger">Incorrect password.</div>
+          {errorMsg && (
+            <div className="text-[11px] font-mono text-danger">{errorMsg}</div>
           )}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || errorCode === 'locked'}
             className="w-full py-2.5 rounded-sm font-mono text-[11px] uppercase tracking-[0.15em] font-semibold cursor-pointer transition-all disabled:opacity-40"
             style={{ background: 'var(--primary)', color: '#ffffff' }}
           >

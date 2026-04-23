@@ -6,5 +6,5 @@ export default async function SignInPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const params = await searchParams
-  return <SignInForm hasError={!!params.error} />
+  return <SignInForm errorCode={params.error ?? null} />
 }
