@@ -37,5 +37,11 @@ export async function POST(req: Request) {
   const token = await createAuthToken(secret)
   const res = NextResponse.redirect(new URL('/', req.url), 303)
   res.cookies.set(COOKIE_NAME, token, COOKIE_OPTIONS)
+  // Non-httpOnly timestamp cookie so SessionWarning can read session age client-side
+  res.cookies.set('grenada_ts', Date.now().toString(), {
+    sameSite: 'strict',
+    maxAge: COOKIE_OPTIONS.maxAge,
+    path: '/',
+  })
   return res
 }
