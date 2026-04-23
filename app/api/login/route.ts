@@ -5,27 +5,33 @@ import { getRedis } from '@/lib/db'
 const MAX_ATTEMPTS = 5
 const LOCKOUT_SECONDS = 300 // 5 minutes
 
-export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-  const rateLimitKey = `login_attempts:${ip}`
+// Hash the submitted password to use as the rate limit key.
+// This avoids relying on the spoofable x-forwarded-for header.
+async function rateLimitKey(password: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
+  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+  return `login_attempts:${hex.slice(0, 16)}`
+}
 
-  const attempts = parseInt((await getRedis().get(rateLimitKey)) ?? '0')
+export async function POST(req: Request) {
+  const formData = await req.formData()
+  const password = (formData.get('password') as string) ?? ''
+
+  const key = await rateLimitKey(password)
+  const attempts = parseInt((await getRedis().get(key)) ?? '0')
   if (attempts >= MAX_ATTEMPTS) {
     return NextResponse.redirect(new URL('/sign-in?error=locked', req.url), 303)
   }
-
-  const formData = await req.formData()
-  const password = (formData.get('password') as string) ?? ''
 
   const correct = process.env.AUTH_PASSWORD
   const secret = process.env.SESSION_SECRET
 
   if (!correct || !secret || password !== correct) {
-    await getRedis().set(rateLimitKey, attempts + 1, 'EX', LOCKOUT_SECONDS)
+    await getRedis().set(key, attempts + 1, 'EX', LOCKOUT_SECONDS)
     return NextResponse.redirect(new URL('/sign-in?error=1', req.url), 303)
   }
 
-  await getRedis().del(rateLimitKey)
+  await getRedis().del(key)
   await getRedis().set('grenada:session:active', '1')
 
   const token = await createAuthToken(secret)

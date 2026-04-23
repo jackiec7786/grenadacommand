@@ -6,6 +6,12 @@ declare global {
 }
 
 export function getRedis(): Redis {
+  // Recreate if connection was permanently closed (e.g. after hot-reload or fatal error)
+  if (global.redis && global.redis.status === 'end') {
+    global.redis.disconnect()
+    global.redis = undefined
+  }
+
   if (!global.redis) {
     global.redis = new Redis(process.env.REDIS_URL!, {
       maxRetriesPerRequest: 1,
@@ -15,6 +21,13 @@ export function getRedis(): Redis {
     })
     // Without this listener, connection errors crash the Node.js process
     global.redis.on('error', (err) => console.error('[redis]', err.message))
+
+    // Clean up on process exit (relevant in dev with hot-reload)
+    process.once('beforeExit', () => {
+      global.redis?.disconnect()
+      global.redis = undefined
+    })
   }
+
   return global.redis
 }
