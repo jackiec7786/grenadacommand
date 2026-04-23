@@ -11,6 +11,7 @@ import { TodaysTasks } from '@/components/todays-tasks'
 import { ProgressDashboard } from '@/components/progress-dashboard'
 import { NotesSection } from '@/components/notes-section'
 import { CrisisBanner } from '@/components/crisis-banner'
+import { SessionWarning } from '@/components/session-warning'
 import { MonthlyHistory } from '@/components/monthly-history'
 import { StreakCounter } from '@/components/streak-counter'
 import { SpiceMetrics } from '@/components/spice-metrics'
@@ -79,7 +80,7 @@ function LoadingSkeleton() {
 }
 
 export default function GrenadaCommandCenter() {
-  const [state, setState, loading] = useServerState()
+  const [state, setState, loading, usingFallback] = useServerState()
   const [activeTab, setActiveTab] = useState<Tab>('today')
 
   const handleLogout = async () => {
@@ -268,6 +269,12 @@ export default function GrenadaCommandCenter() {
       </header>
 
       {/* Always-visible alerts */}
+      <SessionWarning />
+      {usingFallback && (
+        <div className="mb-4 px-3 py-2 rounded-sm border font-mono text-[11px]" style={{ background: 'var(--warn)15', borderColor: 'var(--warn)40', color: 'var(--warn)' }}>
+          ⚠ Redis unavailable — changes saved locally and will sync when reconnected.
+        </div>
+      )}
       <CrisisBanner cash={state.cash} />
 
       {/* Tab navigation */}
