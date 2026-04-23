@@ -41,13 +41,14 @@ export function CredentialsVault() {
     fetch('/api/credentials')
       .then(r => r.json())
       .then((data: Credential[]) => { if (Array.isArray(data)) setCredentials(data) })
-      .catch(() => {})
+      .catch(err => console.error('[credentials] load failed:', err))
   }, [])
 
   const handleAdd = async () => {
     if (!form.platform.trim()) return
+    const tempId = `temp-${Date.now()}`
     const newCred: Credential = {
-      id: `cred-${Date.now()}`,
+      id: tempId,
       platform: form.platform, category: form.category,
       username: form.username, email: form.email,
       password: form.password, accountNumber: form.accountNumber,
@@ -56,17 +57,26 @@ export function CredentialsVault() {
     setCredentials(prev => [newCred, ...prev])
     setForm({ platform: '', category: 'Call Center / Jobs', username: '', email: '', password: '', accountNumber: '', notes: '', url: '' })
     setShowForm(false)
-    await fetch('/api/credentials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newCred),
-    })
+    try {
+      const res = await fetch('/api/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCred),
+      })
+      if (res.ok) {
+        const { id } = await res.json()
+        setCredentials(prev => prev.map(c => c.id === tempId ? { ...c, id } : c))
+      }
+    } catch (err) {
+      console.error('[credentials] save failed:', err)
+    }
   }
 
   const handleRemove = async (id: string) => {
     setCredentials(prev => prev.filter(c => c.id !== id))
     setShowDeleteConfirm(null)
-    await fetch(`/api/credentials/${id}`, { method: 'DELETE' })
+    fetch(`/api/credentials/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('[credentials] delete failed:', err))
   }
 
   const copyToClipboard = async (text: string, key: string) => {

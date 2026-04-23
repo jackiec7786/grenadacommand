@@ -27,6 +27,7 @@ const GREETINGS = [
 
 export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: MorningBriefProps) {
   const [locationTz, setLocationTz] = useState({ timezone: 'America/Grenada', city: 'Grenada' })
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     fetch('/api/location')
@@ -35,6 +36,11 @@ export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: Morn
         if (data?.timezone) setLocationTz({ timezone: data.timezone, city: data.city })
       })
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(interval)
   }, [])
 
   const today = getTodayStr()
@@ -59,9 +65,8 @@ export function MorningBrief({ state, totalIncome, onLogMood, onLogToday }: Morn
   const runwayColor = weeksRunway < 4 ? 'var(--danger)' : weeksRunway < 8 ? 'var(--warn)' : 'var(--accent)'
   const moodColors = { green: 'var(--accent)', yellow: 'var(--warn)', red: 'var(--danger)' }
 
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: locationTz.timezone })
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: locationTz.timezone })
+  const timeStr = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: locationTz.timezone })
+  const dateStr = currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: locationTz.timezone })
 
   return (
     <div

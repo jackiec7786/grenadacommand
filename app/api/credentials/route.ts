@@ -1,12 +1,14 @@
 import { requireAuth } from '@/lib/require-auth'
 import { getRedis } from '@/lib/db'
+import { encrypt, decrypt } from '@/lib/crypto'
 import type { Credential } from '@/lib/data'
 
 const KEY = 'grenada:credentials'
 
 async function getAll(): Promise<Credential[]> {
   const raw = await getRedis().get(KEY)
-  return raw ? JSON.parse(raw) : []
+  if (!raw) return []
+  return JSON.parse(await decrypt(raw))
 }
 
 export async function GET() {
@@ -21,11 +23,16 @@ export async function GET() {
 export async function POST(req: Request) {
   if (!await requireAuth()) return Response.json(null, { status: 401 })
   try {
-    const cred: Credential = await req.json()
+    const body = await req.json()
+    if (typeof body !== 'object' || !body?.platform) {
+      return Response.json({ error: 'Invalid credential' }, { status: 400 })
+    }
+    const id = crypto.randomUUID()
+    const cred: Credential = { ...body, id }
     const all = await getAll()
     all.unshift(cred)
-    await getRedis().set(KEY, JSON.stringify(all))
-    return Response.json({ ok: true })
+    await getRedis().set(KEY, await encrypt(JSON.stringify(all)))
+    return Response.json({ ok: true, id })
   } catch {
     return Response.json({ error: 'Failed to save' }, { status: 500 })
   }

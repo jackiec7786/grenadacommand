@@ -25,7 +25,7 @@ export function useServerState(): [AppState, Setter, boolean] {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: local,
-              }).catch(() => {})
+              }).catch(err => console.error('[state] migration save failed:', err))
               return
             }
           } catch {}
@@ -36,7 +36,8 @@ export function useServerState(): [AppState, Setter, boolean] {
           latestRef.current = data
         }
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('[state] load failed:', err)
         setState(DEFAULT_STATE)
         latestRef.current = DEFAULT_STATE
       })
@@ -53,7 +54,7 @@ export function useServerState(): [AppState, Setter, boolean] {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(latestRef.current),
-        }).catch(() => {})
+        }).catch(err => console.error('[state] save failed:', err))
       }, 1000)
       return next
     })
