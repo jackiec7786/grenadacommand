@@ -31,22 +31,44 @@ function getCondition(code: number): { emoji: string; label: string } {
   return { emoji: '🌡️', label: 'Unknown' }
 }
 
+const GRENADA_TZ = 'America/Grenada'
+
 export function WeatherWidget() {
   const [location, setLocation] = useState<LocationData | null>(null)
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/location')
-      .then(r => r.json())
-      .then((loc: LocationData) => {
+    async function load() {
+      try {
+        const serverLoc: LocationData = await fetch('/api/location').then(r => r.json())
+
+        let loc = serverLoc
+        // If server returned Grenada default, try direct browser-side lookup
+        // (bypasses Vercel's forwarded IP entirely)
+        if (serverLoc.timezone === GRENADA_TZ) {
+          try {
+            const clientData = await fetch('https://ipapi.co/json/').then(r => r.json())
+            if (clientData?.timezone && clientData.timezone !== GRENADA_TZ) {
+              loc = {
+                city: clientData.city ?? serverLoc.city,
+                country: clientData.country_name ?? serverLoc.country,
+                timezone: clientData.timezone,
+                lat: clientData.latitude ?? serverLoc.lat,
+                lon: clientData.longitude ?? serverLoc.lon,
+              }
+            }
+          } catch { /* stay with server loc */ }
+        }
+
         setLocation(loc)
-        return fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`)
-      })
-      .then(r => r.json())
-      .then((data: WeatherData | null) => { if (data) setWeather(data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+        const data: WeatherData | null = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json())
+        if (data) setWeather(data)
+      } catch { /* leave weather null */ } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [])
 
   const condition = weather ? getCondition(weather.weather_code) : null

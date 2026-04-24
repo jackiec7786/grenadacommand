@@ -83,6 +83,21 @@
   --color-purple: var(--purple);
 }
 
+html.dark {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1a2030;
+  --border: #30363d;
+  --accent: #3b82f6;
+  --accent2: #38bdf8;
+  --warn: #f59e0b;
+  --danger: #f87171;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --dim: #21262d;
+  --purple: #a78bfa;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -90,6 +105,9 @@
   body {
     @apply bg-bg text-text font-sans antialiased min-h-screen overflow-x-hidden;
     color-scheme: light;
+  }
+  html.dark body {
+    color-scheme: dark;
   }
 }
 
