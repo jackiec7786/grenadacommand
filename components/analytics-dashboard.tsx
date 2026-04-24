@@ -228,9 +228,9 @@ export function AnalyticsDashboard({
                     fontSize: '10px',
                     fontFamily: 'JetBrains Mono'
                   }}
-                  formatter={(value: number, name: string, props: { payload: { level: string } }) => {
-                    const level = props.payload.level
-                    return [level === 'none' ? 'No data' : level.toUpperCase(), 'Mood']
+                  formatter={(_value, _name, props) => {
+                    const level = (props as { payload?: { level?: string } })?.payload?.level
+                    return [!level || level === 'none' ? 'No data' : level.toUpperCase(), 'Mood' as const]
                   }}
                 />
                 <Bar 

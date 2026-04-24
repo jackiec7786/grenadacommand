@@ -15,7 +15,7 @@ export function IncomeTracker({ income, currentPhase, onIncomeChange }: IncomeTr
   const goalPct = Math.min(100, (total / goal) * 100)
 
   // Active streams for this phase
-  const activeIds = new Set(config.activeStreams)
+  const activeIds = new Set<string>(config.activeStreams)
   const activeStreams = INCOME_STREAMS.filter(s => activeIds.has(s.id))
   const otherStreams = INCOME_STREAMS.filter(s => !activeIds.has(s.id) && (income[s.id] || 0) > 0)
   const displayStreams = [...activeStreams, ...otherStreams]
