@@ -21,6 +21,7 @@ interface PomodoroTimerProps {
   sessions: PomodoroSession[]
   onSessionComplete: (session: Omit<PomodoroSession, 'id'>) => void
   todayDeepWorkMinutes: number
+  initialLabel?: string
 }
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak'
@@ -35,6 +36,7 @@ export function PomodoroTimer({
   sessions,
   onSessionComplete,
   todayDeepWorkMinutes,
+  initialLabel,
 }: PomodoroTimerProps) {
   const [mode, setMode] = useState<TimerMode>('work')
   const [timeLeft, setTimeLeft] = useState(TIMER_SETTINGS.work)
@@ -42,7 +44,11 @@ export function PomodoroTimer({
   const [pomodorosCompleted, setPomodorosCompleted] = useState(0)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
-  const [currentLabel, setCurrentLabel] = useState('')
+  const [currentLabel, setCurrentLabel] = useState(initialLabel ?? '')
+
+  useEffect(() => {
+    if (initialLabel) setCurrentLabel(initialLabel)
+  }, [initialLabel])
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)

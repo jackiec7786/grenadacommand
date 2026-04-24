@@ -51,6 +51,7 @@ import { InternetLog } from '@/components/internet-log'
 import { Settings } from 'lucide-react'
 import { DailyIncomeGoal } from '@/components/daily-income-goal'
 import { JobApplicationTracker } from '@/components/job-application-tracker'
+import { DailyFocus } from '@/components/daily-focus'
 
 const AnalyticsDashboard = dynamic(
   () => import('@/components/analytics-dashboard').then(m => ({ default: m.AnalyticsDashboard })),
@@ -59,7 +60,7 @@ const AnalyticsDashboard = dynamic(
 
 type Tab = 'today' | 'finances' | 'progress' | 'business' | 'wellbeing' | 'tools'
 
-const TABS: { id: Tab; label: string }[] = [
+const ALL_TABS: { id: Tab; label: string }[] = [
   { id: 'today',    label: 'Today'     },
   { id: 'finances', label: 'Finances'  },
   { id: 'progress', label: 'Progress'  },
@@ -67,6 +68,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'wellbeing',label: 'Wellbeing' },
   { id: 'tools',    label: 'Tools'     },
 ]
+
+const PHASE_TABS: Record<number, Tab[]> = {
+  1: ['today', 'finances', 'progress'],
+  2: ['today', 'finances', 'progress', 'business'],
+  3: ['today', 'finances', 'progress', 'business', 'wellbeing'],
+  4: ['today', 'finances', 'progress', 'business', 'wellbeing', 'tools'],
+}
 
 function getTodayStr() { return new Date().toISOString().slice(0, 10) }
 
@@ -86,6 +94,8 @@ function LoadingSkeleton() {
 export default function GrenadaCommandCenter() {
   const [state, setState, loading, usingFallback] = useServerState()
   const [activeTab, setActiveTab] = useState<Tab>('today')
+  const [showAllTabs, setShowAllTabs] = useState(false)
+  const [timerLabel, setTimerLabel] = useState('')
 
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' })
@@ -279,6 +289,18 @@ export default function GrenadaCommandCenter() {
         </div>
       </header>
 
+      {/* Daily focus overlay — shown once per day */}
+      <DailyFocus
+        cash={state.cash}
+        income={state.income}
+        streakDays={state.streakDays || 0}
+        currentPhase={state.currentPhase}
+        tasks={state.tasks}
+        onLogToday={handleLogToday}
+        onStartTimer={label => { setTimerLabel(label); setActiveTab('today') }}
+        onDismiss={() => {}}
+      />
+
       {/* Always-visible alerts */}
       <SessionWarning />
       {usingFallback && (
@@ -289,12 +311,12 @@ export default function GrenadaCommandCenter() {
       <CrisisBanner cash={state.cash} />
 
       {/* Tab navigation */}
-      <nav className="flex gap-1 mb-6 overflow-x-auto pb-1">
-        {TABS.map(tab => (
+      <nav className="flex gap-1 mb-6 overflow-x-auto pb-1 flex-wrap">
+        {(showAllTabs ? ALL_TABS : ALL_TABS.filter(t => (PHASE_TABS[state.currentPhase] ?? ALL_TABS.map(x => x.id)).includes(t.id))).map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="shrink-0 px-4 py-2 rounded-sm font-mono text-[10px] tracking-[0.15em] uppercase transition-all cursor-pointer"
+            className="shrink-0 px-4 py-2 rounded-sm font-mono text-[10px] tracking-[0.15em] uppercase transition-all cursor-pointer min-h-[40px]"
             style={activeTab === tab.id
               ? { background: 'var(--primary)', color: 'var(--bg)', fontWeight: 700 }
               : { background: 'transparent', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }
@@ -303,6 +325,14 @@ export default function GrenadaCommandCenter() {
             {tab.label}
           </button>
         ))}
+        <button
+          onClick={() => setShowAllTabs(p => !p)}
+          className="shrink-0 px-3 py-2 rounded-sm font-mono text-[9px] uppercase transition-all cursor-pointer min-h-[40px] text-muted-foreground hover:text-text"
+          style={{ border: '1px dashed var(--border)' }}
+          title={showAllTabs ? 'Show fewer tabs' : 'Show all tabs'}
+        >
+          {showAllTabs ? '← Less' : '⋯ All'}
+        </button>
       </nav>
 
       {/* ── TODAY ─────────────────────────────────────────────────────────── */}
@@ -314,7 +344,12 @@ export default function GrenadaCommandCenter() {
             onLogMood={handleLogMood}
             onLogToday={handleLogToday}
           />
-          <RunwaySection cash={state.cash} onCashChange={v => set('cash', v)} monthlyIncome={totalIncome} />
+          <RunwaySection
+            cash={state.cash}
+            onCashChange={v => set('cash', v)}
+            monthlyIncome={totalIncome}
+            onAddExpense={expense => setState(prev => ({ ...prev, expenses: [...(prev.expenses || []), { ...expense, id: `exp-${Date.now()}` }] }))}
+          />
 
           <DailyIncomeGoal
             monthlyGoal={PHASE_INCOME_TARGETS[state.currentPhase as keyof typeof PHASE_INCOME_TARGETS] ?? 2500}
@@ -345,11 +380,13 @@ export default function GrenadaCommandCenter() {
               onTaskToggle={(pk, i) =>
                 setState(prev => ({ ...prev, tasks: { ...prev.tasks, [pk]: { ...prev.tasks[pk], [i]: !prev.tasks[pk]?.[i] } } }))
               }
+              onStartTimer={label => { setTimerLabel(label); setActiveTab('today') }}
             />
             <PomodoroTimer
               sessions={state.pomodoroSessions || []}
               onSessionComplete={session => setState(prev => ({ ...prev, pomodoroSessions: [...(prev.pomodoroSessions || []), { ...session, id: `pom-${Date.now()}` }] }))}
               todayDeepWorkMinutes={todayDeepWorkMinutes}
+              initialLabel={timerLabel || undefined}
             />
           </TwoCol>
 
