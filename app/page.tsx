@@ -4,6 +4,7 @@ import { useMemo, useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useServerState } from '@/hooks/use-server-state'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
+import Link from 'next/link'
 import { RunwaySection } from '@/components/runway-section'
 import { IncomeTracker } from '@/components/income-tracker'
 import { WeeklyScorecard } from '@/components/weekly-scorecard'
@@ -47,6 +48,7 @@ import { UpworkTracker } from '@/components/upwork-tracker'
 import { CredentialsVault } from '@/components/credentials-vault'
 import { FreightCalculator } from '@/components/freight-calculator'
 import { InternetLog } from '@/components/internet-log'
+import { Settings } from 'lucide-react'
 import { DailyIncomeGoal } from '@/components/daily-income-goal'
 import { JobApplicationTracker } from '@/components/job-application-tracker'
 
@@ -253,6 +255,13 @@ export default function GrenadaCommandCenter() {
             >
               {PHASE_LABELS[state.currentPhase]}
             </div>
+            <Link
+              href="/settings"
+              className="text-muted-foreground hover:text-text transition-all p-1 rounded-sm border border-border hover:border-muted-foreground"
+              title="Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </Link>
             <button
               onClick={handleLogout}
               className="text-[9px] font-mono text-muted-foreground hover:text-danger transition-all cursor-pointer border border-border px-2.5 py-1 rounded-sm hover:border-danger"
