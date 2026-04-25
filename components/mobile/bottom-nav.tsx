@@ -1,16 +1,17 @@
 "use client"
 
-import { Home, DollarSign, TrendingUp, Briefcase, Heart, Wrench } from 'lucide-react'
+import { useState } from 'react'
+import { Home, DollarSign, TrendingUp, Briefcase, Heart, Wrench, Lock, X } from 'lucide-react'
 
 type Tab = 'today' | 'finances' | 'progress' | 'business' | 'wellbeing' | 'tools'
 
-const NAV_ITEMS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'today',     label: 'Today',    icon: <Home className="w-5 h-5" /> },
-  { id: 'finances',  label: 'Money',    icon: <DollarSign className="w-5 h-5" /> },
-  { id: 'progress',  label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
-  { id: 'business',  label: 'Business', icon: <Briefcase className="w-5 h-5" /> },
-  { id: 'wellbeing', label: 'Wellbeing',icon: <Heart className="w-5 h-5" /> },
-  { id: 'tools',     label: 'Tools',    icon: <Wrench className="w-5 h-5" /> },
+const NAV_ITEMS: { id: Tab; label: string; icon: React.ReactNode; lockedAfterPhase: string }[] = [
+  { id: 'today',     label: 'Today',     icon: <Home className="w-5 h-5" />,       lockedAfterPhase: '' },
+  { id: 'finances',  label: 'Money',     icon: <DollarSign className="w-5 h-5" />, lockedAfterPhase: '' },
+  { id: 'progress',  label: 'Progress',  icon: <TrendingUp className="w-5 h-5" />, lockedAfterPhase: '' },
+  { id: 'business',  label: 'Business',  icon: <Briefcase className="w-5 h-5" />,  lockedAfterPhase: 'Phase 2+' },
+  { id: 'wellbeing', label: 'Wellbeing', icon: <Heart className="w-5 h-5" />,      lockedAfterPhase: 'Phase 3+' },
+  { id: 'tools',     label: 'Tools',     icon: <Wrench className="w-5 h-5" />,     lockedAfterPhase: 'Phase 4' },
 ]
 
 interface Props {
@@ -21,50 +22,157 @@ interface Props {
 }
 
 export function BottomNav({ activeTab, visibleTabs, onTabChange, onMorePress }: Props) {
-  const items = NAV_ITEMS.filter(n => visibleTabs.includes(n.id))
-  const showMore = items.length < NAV_ITEMS.length
+  const [sheetOpen, setSheetOpen] = useState(false)
 
-  const allItems = showMore ? items.slice(0, 4) : items
+  const items = NAV_ITEMS.filter(n => visibleTabs.includes(n.id))
+  const showMore = items.length < NAV_ITEMS.length || items.length > 4
+
+  // Show at most 4 items in the bar, rest go into the sheet
+  const barItems = showMore ? items.slice(0, 4) : items
+  const overflowItems = items.slice(4)
+
+  const handleTabSelect = (id: Tab) => {
+    onTabChange(id)
+    setSheetOpen(false)
+  }
+
+  const handleSettingsPress = () => {
+    setSheetOpen(false)
+    onMorePress()
+  }
 
   return (
-    <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch"
-      style={{
-        background: 'var(--surface)',
-        borderTop: '1px solid var(--border)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
-    >
-      {allItems.map(item => {
-        const active = activeTab === item.id
-        return (
+    <>
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch"
+        style={{
+          background: 'var(--surface)',
+          borderTop: '1px solid var(--border)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {barItems.map(item => {
+          const active = activeTab === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] transition-all cursor-pointer relative"
+              style={{ color: active ? 'var(--primary)' : 'var(--muted-foreground)' }}
+            >
+              {item.icon}
+              <span className="font-mono text-[9px] tracking-[0.05em]">{item.label}</span>
+              {active && (
+                <span
+                  className="absolute bottom-0 w-8 h-[2px] rounded-full"
+                  style={{ background: 'var(--primary)' }}
+                />
+              )}
+            </button>
+          )
+        })}
+
+        {showMore && (
           <button
-            key={item.id}
-            onClick={() => onTabChange(item.id)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] transition-all cursor-pointer"
-            style={{ color: active ? 'var(--primary)' : 'var(--muted-foreground)' }}
+            onClick={() => setSheetOpen(true)}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] cursor-pointer relative"
+            style={{ color: overflowItems.some(t => t.id === activeTab) ? 'var(--primary)' : 'var(--muted-foreground)' }}
           >
-            {item.icon}
-            <span className="font-mono text-[9px] tracking-[0.05em]">{item.label}</span>
-            {active && (
-              <span
-                className="absolute bottom-0 w-8 h-[2px] rounded-full"
-                style={{ background: 'var(--primary)' }}
-              />
+            <span className="text-lg leading-none font-bold">⋯</span>
+            <span className="font-mono text-[9px] tracking-[0.05em]">More</span>
+            {overflowItems.some(t => t.id === activeTab) && (
+              <span className="absolute bottom-0 w-8 h-[2px] rounded-full" style={{ background: 'var(--primary)' }} />
             )}
           </button>
-        )
-      })}
-      {showMore && (
-        <button
-          onClick={onMorePress}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] cursor-pointer"
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <span className="text-lg leading-none">⋯</span>
-          <span className="font-mono text-[9px] tracking-[0.05em]">More</span>
-        </button>
+        )}
+      </nav>
+
+      {/* Tab picker sheet */}
+      {sheetOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-[55]"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setSheetOpen(false)}
+          />
+          <div
+            className="md:hidden fixed bottom-0 left-0 right-0 z-[60] rounded-t-2xl"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderBottom: 'none',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+          >
+            <div className="mx-auto mt-3 w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+
+            <div className="flex items-center justify-between px-5 pt-3 pb-1">
+              <div>
+                <div className="text-[9px] font-mono tracking-[0.2em] text-primary uppercase">// Navigation</div>
+                <h2 className="font-mono text-[15px] font-bold text-text">Switch Tab</h2>
+              </div>
+              <button
+                onClick={() => setSheetOpen(false)}
+                className="p-2 rounded-md text-muted-foreground hover:text-text cursor-pointer transition-all"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 space-y-1">
+              {NAV_ITEMS.map(item => {
+                const unlocked = visibleTabs.includes(item.id)
+                const active = activeTab === item.id && unlocked
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => unlocked ? handleTabSelect(item.id) : undefined}
+                    disabled={!unlocked}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+                    style={{
+                      background: active ? 'var(--primary)15' : 'var(--surface2)',
+                      border: `1px solid ${active ? 'var(--primary)40' : 'var(--border)'}`,
+                      opacity: unlocked ? 1 : 0.4,
+                      cursor: unlocked ? 'pointer' : 'default',
+                    }}
+                  >
+                    <span style={{ color: active ? 'var(--primary)' : unlocked ? 'var(--text)' : 'var(--muted-foreground)' }}>
+                      {unlocked ? item.icon : <Lock className="w-5 h-5" />}
+                    </span>
+                    <span
+                      className="flex-1 font-mono text-[13px] text-left"
+                      style={{ color: active ? 'var(--primary)' : 'var(--text)', fontWeight: active ? 700 : 400 }}
+                    >
+                      {item.label}
+                    </span>
+                    {!unlocked && (
+                      <span className="font-mono text-[9px] px-1.5 py-0.5 rounded-sm" style={{ background: 'var(--dim)', color: 'var(--muted-foreground)' }}>
+                        {item.lockedAfterPhase}
+                      </span>
+                    )}
+                    {active && (
+                      <span className="font-mono text-[9px]" style={{ color: 'var(--primary)' }}>●</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="px-4 pb-4 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+              <button
+                onClick={handleSettingsPress}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all font-mono text-[12px]"
+                style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
+              >
+                <span className="text-base">☰</span>
+                Settings &amp; Menu
+              </button>
+            </div>
+          </div>
+        </>
       )}
-    </nav>
+    </>
   )
 }
