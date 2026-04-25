@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useServerState } from '@/hooks/use-server-state'
 import { DEFAULT_STATE, PHASE_LABELS, MILESTONES, PHASE_CONFIGS, PHASE_INCOME_TARGETS, type AppState, type MoodEntry, type WeeklyReview, type Contact, type Decision, type CapitalEntry, type Goal } from '@/lib/data'
@@ -48,10 +48,13 @@ import { UpworkTracker } from '@/components/upwork-tracker'
 import { CredentialsVault } from '@/components/credentials-vault'
 import { FreightCalculator } from '@/components/freight-calculator'
 import { InternetLog } from '@/components/internet-log'
-import { Settings } from 'lucide-react'
+import { Settings, Menu } from 'lucide-react'
 import { DailyIncomeGoal } from '@/components/daily-income-goal'
 import { JobApplicationTracker } from '@/components/job-application-tracker'
 import { DailyFocus } from '@/components/daily-focus'
+import { DailyQuote } from '@/components/daily-quote'
+import { BottomNav } from '@/components/mobile/bottom-nav'
+import { MobileDrawer } from '@/components/mobile/drawer'
 
 const AnalyticsDashboard = dynamic(
   () => import('@/components/analytics-dashboard').then(m => ({ default: m.AnalyticsDashboard })),
@@ -96,10 +99,38 @@ export default function GrenadaCommandCenter() {
   const [activeTab, setActiveTab] = useState<Tab>('today')
   const [showAllTabs, setShowAllTabs] = useState(false)
   const [timerLabel, setTimerLabel] = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    setCurrentTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' })
     window.location.href = '/sign-in'
+  }
+
+  const visibleTabs = useMemo(
+    () => (PHASE_TABS[state.currentPhase] ?? ALL_TABS.map(t => t.id)) as Tab[],
+    [state.currentPhase]
+  )
+
+  const handleThemeToggle = () => {
+    const current = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    const next = current === 'dark' ? 'light' : 'dark'
+    document.cookie = `grenada_theme=${next};path=/;max-age=${60 * 60 * 24 * 365};samesite=strict`
+    window.location.reload()
+  }
+
+  const handleExportData = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `grenada-data-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const totalIncome = useMemo(
@@ -247,10 +278,32 @@ export default function GrenadaCommandCenter() {
   if (loading) return <LoadingSkeleton />
 
   return (
-    <div className="relative z-[1] max-w-[1100px] mx-auto px-5 py-6">
+    <div className="relative z-[1] max-w-[1100px] mx-auto px-5 py-6 pb-24 md:pb-6">
 
       {/* Header */}
-      <header className="flex items-start justify-between mb-6 pb-5 border-b border-border max-[700px]:flex-col max-[700px]:gap-4">
+      {/* Mobile-only top bar */}
+      <div className="md:hidden flex items-center justify-between mb-4 pb-4 border-b border-border">
+        <div>
+          <div className="text-[9px] font-mono tracking-[0.2em] text-primary uppercase">// GCC</div>
+          <h1 className="text-[18px] font-extrabold text-text leading-none">Command Center</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="inline-block text-white text-[9px] font-bold font-mono tracking-[0.1em] px-2 py-0.5 rounded-sm uppercase"
+            style={{ background: config.cssColor }}
+          >
+            {PHASE_LABELS[state.currentPhase]}
+          </div>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="p-2 rounded-md border border-border text-muted-foreground hover:text-text cursor-pointer transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <header className="hidden md:flex items-start justify-between mb-6 pb-5 border-b border-border max-[700px]:flex-col max-[700px]:gap-4">
         <div>
           <h1 className="text-[11px] font-mono tracking-[0.25em] text-primary uppercase mb-1.5">
             // Grenada Command Center
@@ -310,8 +363,8 @@ export default function GrenadaCommandCenter() {
       )}
       <CrisisBanner cash={state.cash} />
 
-      {/* Tab navigation */}
-      <nav className="flex gap-1 mb-6 overflow-x-auto pb-1 flex-wrap">
+      {/* Tab navigation — desktop only */}
+      <nav className="hidden md:flex gap-1 mb-6 overflow-x-auto pb-1 flex-wrap">
         {(showAllTabs ? ALL_TABS : ALL_TABS.filter(t => (PHASE_TABS[state.currentPhase] ?? ALL_TABS.map(x => x.id)).includes(t.id))).map(tab => (
           <button
             key={tab.id}
@@ -338,6 +391,7 @@ export default function GrenadaCommandCenter() {
       {/* ── TODAY ─────────────────────────────────────────────────────────── */}
       {activeTab === 'today' && (
         <div className="space-y-6">
+          <DailyQuote />
           <MorningBrief
             state={state}
             totalIncome={totalIncome}
@@ -615,8 +669,25 @@ export default function GrenadaCommandCenter() {
         </div>
       )}
 
+      {/* Mobile bottom nav */}
+      <BottomNav
+        activeTab={activeTab}
+        visibleTabs={visibleTabs}
+        onTabChange={setActiveTab}
+        onMorePress={() => setDrawerOpen(true)}
+      />
+
+      <MobileDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        theme={currentTheme}
+        onToggleTheme={handleThemeToggle}
+        onLogout={handleLogout}
+        onExport={handleExportData}
+      />
+
       {/* Footer */}
-      <footer className="mt-8 pt-4 border-t border-border flex justify-between items-center">
+      <footer className="mt-8 pt-4 border-t border-border hidden md:flex justify-between items-center">
         <span className="font-mono text-[10px] text-muted-foreground tracking-[0.1em]">Data saved to your account</span>
         <button
           onClick={() => { if (confirm('Reset all data? This cannot be undone.')) setState(DEFAULT_STATE) }}

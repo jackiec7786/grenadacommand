@@ -926,3 +926,26 @@ export const PSYCH_MESSAGES = {
     '30 days. A month in. This is now who you are.',
   ],
 }
+
+export const QUOTES = [
+  { text: "The sea does not reward those who are too anxious, too greedy, or too impatient. To dig for treasures shows not only impatience and greed, but lack of faith. Patience, patience, patience, is what the sea teaches.", author: "Anne Morrow Lindbergh" },
+  { text: "Small islands make large contributions to the world.", author: "Island Proverb" },
+  { text: "Every day is a new beginning. Take a deep breath, smile, and start again.", author: "Unknown" },
+  { text: "The man who moves a mountain begins by carrying away small stones.", author: "Confucius" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "A rising tide lifts all boats.", author: "John F. Kennedy" },
+  { text: "The ocean is a mighty harmonist.", author: "William Wordsworth" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Grenada is not just a place. It is a state of mind — warm, resilient, and full of potential.", author: "Island Wisdom" },
+  { text: "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.", author: "Steve Jobs" },
+  { text: "The spice must flow. So must the work.", author: "Grenada Command" },
+  { text: "Opportunities are like sunrises. If you wait too long, you miss them.", author: "William Arthur Ward" },
+  { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+  { text: "Nutmeg, mace, cinnamon — Grenada's spices carried the world. So will your work.", author: "Island Wisdom" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+]
