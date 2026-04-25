@@ -40,6 +40,18 @@ export function WeatherWidget() {
   const [showManual, setShowManual] = useState(false)
   const [manualCity, setManualCity] = useState('')
   const [geocoding, setGeocoding] = useState(false)
+  const [unit, setUnit] = useState<'C' | 'F'>(() => {
+    if (typeof window !== 'undefined') return (localStorage.getItem('grenada:temp-unit') as 'C' | 'F') ?? 'C'
+    return 'C'
+  })
+
+  const toggleUnit = () => {
+    const next = unit === 'C' ? 'F' : 'C'
+    setUnit(next)
+    localStorage.setItem('grenada:temp-unit', next)
+  }
+
+  const fmt = (c: number) => unit === 'C' ? `${Math.round(c)}°C` : `${Math.round(c * 9 / 5 + 32)}°F`
 
   useEffect(() => {
     async function load() {
@@ -133,15 +145,20 @@ export function WeatherWidget() {
         <>
           <div className="flex items-end gap-3 mb-3">
             <span className="text-4xl leading-none">{condition.emoji}</span>
-            <div>
-              <div className="font-mono text-[36px] font-extrabold text-text leading-none">{Math.round(weather.temperature_2m)}°C</div>
+            <div className="flex-1">
+              <div className="flex items-baseline gap-2">
+                <div className="font-mono text-[36px] font-extrabold text-text leading-none">{fmt(weather.temperature_2m)}</div>
+                <button onClick={toggleUnit} className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded-sm cursor-pointer transition-all" style={{ background: 'var(--dim)', color: 'var(--muted-foreground)' }}>
+                  {unit === 'C' ? '°F' : '°C'}
+                </button>
+              </div>
               <div className="font-mono text-[11px] text-muted-foreground">{condition.label}</div>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="text-center">
               <div className="font-mono text-[10px] text-muted-foreground">Feels like</div>
-              <div className="font-mono text-[13px] font-semibold text-text">{Math.round(weather.apparent_temperature)}°C</div>
+              <div className="font-mono text-[13px] font-semibold text-text">{fmt(weather.apparent_temperature)}</div>
             </div>
             <div className="text-center">
               <div className="font-mono text-[10px] text-muted-foreground">Humidity</div>

@@ -15,7 +15,7 @@ export function TasksTab({ config, onSaveConfig }: Props) {
   const [phase, setPhase] = useState(1)
   const [lists, setLists] = useState<TaskLists>(() => {
     const copy: TaskLists = {}
-    for (const p of [1, 2, 3, 4]) copy[p] = (config.tasks[p] ?? []).map(t => ({ ...t }))
+    for (const p of [1, 2, 3, 4]) copy[p] = (config?.tasks?.[p] ?? []).map(t => ({ ...t }))
     return copy
   })
   const [newLabel, setNewLabel] = useState('')

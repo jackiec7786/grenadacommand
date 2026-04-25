@@ -13,7 +13,7 @@ const inp = 'bg-dim border border-border text-text font-mono text-[11px] p-1.5 r
 
 export function MilestonesTab({ config, onSaveConfig }: Props) {
   const [phase, setPhase] = useState(1)
-  const [items, setItems] = useState<ConfigMilestone[]>(() => config.milestones.map(m => ({ ...m })))
+  const [items, setItems] = useState<ConfigMilestone[]>(() => (config?.milestones ?? []).map(m => ({ ...m })))
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editMonth, setEditMonth] = useState('')

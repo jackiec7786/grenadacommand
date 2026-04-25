@@ -22,7 +22,7 @@ export function PsychTab({ config, onSaveConfig }: Props) {
   const [category, setCategory] = useState('month1')
   const [messages, setMessages] = useState<Record<string, string[]>>(() => {
     const copy: Record<string, string[]> = {}
-    for (const c of CATEGORIES) copy[c.id] = [...(config.psychMessages[c.id] ?? [])]
+    for (const c of CATEGORIES) copy[c.id] = [...(config?.psychMessages?.[c.id] ?? [])]
     return copy
   })
   const [editIdx, setEditIdx] = useState<number | null>(null)

@@ -11,7 +11,7 @@ interface Props {
 const inp = 'bg-dim border border-border text-text font-mono text-[11px] p-1.5 rounded-sm focus:outline-none focus:border-accent'
 
 export function StreamsTab({ config, onSaveConfig }: Props) {
-  const [streams, setStreams] = useState<ConfigIncomeStream[]>(() => config.incomeStreams.map(s => ({ ...s })))
+  const [streams, setStreams] = useState<ConfigIncomeStream[]>(() => (config?.incomeStreams ?? []).map(s => ({ ...s })))
   const [editId, setEditId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editMax, setEditMax] = useState('')
