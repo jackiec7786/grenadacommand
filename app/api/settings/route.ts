@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/require-auth'
-import { getSettings, saveSettings } from '@/lib/settings'
+import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/settings'
 import type { AppSettings } from '@/lib/settings'
 
 export type { AppSettings }
@@ -11,7 +11,8 @@ export async function GET() {
     const { passwordHash: _, ...safe } = settings
     return Response.json(safe)
   } catch {
-    return Response.json({ sessionTimeoutDays: 7, currency: 'USD', theme: 'light', monthlyGoal: 2500, customTaskLists: null, customIncomeSources: null })
+    const { passwordHash: _, ...safe } = DEFAULT_SETTINGS
+    return Response.json(safe)
   }
 }
 

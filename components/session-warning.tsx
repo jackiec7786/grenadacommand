@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-const SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const SESSION_MAX_MS = 30 * 24 * 60 * 60 * 1000 // 30 days (matches SESSION_DURATION_LONG)
 const WARN_THRESHOLD_MS = 24 * 60 * 60 * 1000  // warn when < 1 day remains
 
 export function SessionWarning() {

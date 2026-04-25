@@ -42,8 +42,10 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL('/sign-in?error=1', req.url), 303)
   }
 
-  await getRedis().del(key)
-  await getRedis().set('grenada:session:active', '1')
+  await Promise.all([
+    getRedis().del(key),
+    getRedis().set('grenada:session:active', '1'),
+  ])
 
   const token = await createAuthToken(secret)
   const maxAge = remember ? SESSION_DURATION_LONG : SESSION_DURATION_SHORT
