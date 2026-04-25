@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createAuthToken, COOKIE_NAME, COOKIE_OPTIONS } from '@/lib/auth-cookie'
+import { createAuthToken, COOKIE_NAME, COOKIE_OPTIONS, SESSION_DURATION_LONG, SESSION_DURATION_SHORT } from '@/lib/auth-cookie'
 import { getRedis } from '@/lib/db'
 import { getSettings } from '@/lib/settings'
 import { verifyPassword } from '@/lib/password'
@@ -16,6 +16,7 @@ async function rateLimitKey(password: string): Promise<string> {
 export async function POST(req: Request) {
   const formData = await req.formData()
   const password = (formData.get('password') as string) ?? ''
+  const remember = formData.get('remember') === 'on'
 
   const key = await rateLimitKey(password)
   const attempts = parseInt((await getRedis().get(key)) ?? '0')
@@ -45,8 +46,7 @@ export async function POST(req: Request) {
   await getRedis().set('grenada:session:active', '1')
 
   const token = await createAuthToken(secret)
-  const timeoutDays = settings.sessionTimeoutDays ?? 7
-  const maxAge = timeoutDays * 24 * 60 * 60
+  const maxAge = remember ? SESSION_DURATION_LONG : SESSION_DURATION_SHORT
 
   const res = NextResponse.redirect(new URL('/', req.url), 303)
   res.cookies.set(COOKIE_NAME, token, { ...COOKIE_OPTIONS, maxAge })

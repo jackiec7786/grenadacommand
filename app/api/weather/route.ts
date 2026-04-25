@@ -13,9 +13,9 @@ export async function GET(req: Request) {
       '&temperature_unit=celsius&wind_speed_unit=kmh'
     const res = await fetch(url)
     const data = await res.json()
-    if (!data?.current) return Response.json(null, { status: 503 })
+    if (!data?.current) return Response.json(null)
     return Response.json(data.current)
   } catch {
-    return Response.json(null, { status: 503 })
+    return Response.json(null)
   }
 }

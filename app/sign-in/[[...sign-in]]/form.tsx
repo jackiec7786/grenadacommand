@@ -31,6 +31,11 @@ export default function SignInForm({ errorCode }: { errorCode: string | null }) 
               disabled={errorCode === 'locked'}
             />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="remember" value="on" defaultChecked
+              className="accent-primary w-3.5 h-3.5" />
+            <span className="text-[11px] font-mono text-muted-foreground">Remember me for 30 days</span>
+          </label>
           {errorMsg && (
             <div className="text-[11px] font-mono text-danger">{errorMsg}</div>
           )}

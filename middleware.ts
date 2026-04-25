@@ -2,18 +2,31 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyAuthToken, COOKIE_NAME } from '@/lib/auth-cookie'
 
+// Paths that never require authentication
+const PUBLIC_PATHS = [
+  '/sign-in',
+  '/api/login',
+  '/api/quote',
+  '/api/location',
+  '/api/weather',
+]
+
 export async function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname.startsWith('/sign-in')) {
+  const { pathname } = req.nextUrl
+
+  if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.next()
   }
 
   const token = req.cookies.get(COOKIE_NAME)?.value
-  if (!token) {
-    return NextResponse.redirect(new URL('/sign-in', req.url))
-  }
-
   const secret = process.env.SESSION_SECRET
-  if (!secret || !await verifyAuthToken(token, secret)) {
+  const valid = !!token && !!secret && await verifyAuthToken(token, secret)
+
+  if (!valid) {
+    // API routes get JSON 401; pages get a redirect to /sign-in
+    if (pathname.startsWith('/api/')) {
+      return Response.json(null, { status: 401 })
+    }
     return NextResponse.redirect(new URL('/sign-in', req.url))
   }
 
@@ -21,5 +34,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|api|.*\\..*).*)'],
+  // Cover all routes except Next.js internals and static assets
+  matcher: ['/((?!_next|.*\\..*).*)'],
 }
