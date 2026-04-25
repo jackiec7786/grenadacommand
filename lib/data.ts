@@ -684,6 +684,35 @@ export const GRENADA_EVENTS: GrenadaEvent[] = [
     urgency: 'upcoming',
     category: 'business',
   },
+
+  // ── 2026 public holidays (upcoming from Apr 25 2026) ──────────────────
+  { id: 'ph_2026_labour',       name: 'Labour Day',                   dates: 'May 1, 2026',      confirmedDates: '2026-05-01', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'now',      category: 'culture'  },
+  { id: 'ph_2026_whit',         name: 'Whit Monday',                  dates: 'May 25, 2026',     confirmedDates: '2026-05-25', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'soon',     category: 'culture'  },
+  { id: 'ph_2026_corpus',       name: 'Corpus Christi',               dates: 'Jun 4, 2026',      confirmedDates: '2026-06-04', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'soon',     category: 'culture'  },
+  { id: 'bday_sp_2026',         name: "Sp's Birthday",                dates: 'Jun 8, 2026',      confirmedDates: '2026-06-08', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'soon',     category: 'culture'  },
+  { id: 'ph_2026_emancipation', name: 'Emancipation Day (in lieu)',   dates: 'Aug 3, 2026',      confirmedDates: '2026-08-03', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'upcoming', category: 'culture'  },
+  { id: 'ph_2026_carnival_mon', name: 'Carnival Monday',              dates: 'Aug 10, 2026',     confirmedDates: '2026-08-10', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'upcoming', category: 'festival' },
+  { id: 'ph_2026_carnival_tue', name: 'Carnival Tuesday',             dates: 'Aug 11, 2026',     confirmedDates: '2026-08-11', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'upcoming', category: 'festival' },
+  { id: 'ph_2026_heroes',       name: 'National Heroes Day',          dates: 'Oct 19, 2026',     confirmedDates: '2026-10-19', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'upcoming', category: 'culture'  },
+  { id: 'ph_2026_thanks',       name: 'Thanksgiving',                 dates: 'Oct 25–26, 2026',  confirmedDates: '2026-10-25', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'upcoming', category: 'culture'  },
+  { id: 'ph_2026_christmas',    name: 'Christmas Day',                dates: 'Dec 25, 2026',     confirmedDates: '2026-12-25', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2026_boxing',       name: 'Boxing Day',                   dates: 'Dec 26, 2026',     confirmedDates: '2026-12-26', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+
+  // ── 2027 public holidays ──────────────────────────────────────────────
+  { id: 'ph_2027_newyear',      name: "New Year's Day",               dates: 'Jan 1, 2027',      confirmedDates: '2027-01-01', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_independence', name: 'Independence Day',             dates: 'Feb 7–8, 2027',    confirmedDates: '2027-02-07', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_goodfriday',   name: 'Good Friday',                  dates: 'Mar 26, 2027',     confirmedDates: '2027-03-26', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_easter',       name: 'Easter Monday',                dates: 'Mar 29, 2027',     confirmedDates: '2027-03-29', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_labour',       name: 'Labour Day',                   dates: 'May 1, 2027',      confirmedDates: '2027-05-01', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_whit',         name: 'Whit Monday',                  dates: 'May 17, 2027',     confirmedDates: '2027-05-17', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_corpus',       name: 'Corpus Christi',               dates: 'May 27, 2027',     confirmedDates: '2027-05-27', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_emancipation', name: 'Emancipation Day (in lieu)',   dates: 'Aug 2, 2027',      confirmedDates: '2027-08-02', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_carnival_mon', name: 'Carnival Monday',              dates: 'Aug 9, 2027',      confirmedDates: '2027-08-09', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'festival' },
+  { id: 'ph_2027_carnival_tue', name: 'Carnival Tuesday',             dates: 'Aug 10, 2027',     confirmedDates: '2027-08-10', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'festival' },
+  { id: 'ph_2027_heroes',       name: 'National Heroes Day',          dates: 'Oct 19, 2027',     confirmedDates: '2027-10-19', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_thanks',       name: 'Thanksgiving',                 dates: 'Oct 25, 2027',     confirmedDates: '2027-10-25', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_christmas',    name: 'Christmas Day',                dates: 'Dec 25, 2027',     confirmedDates: '2027-12-25', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
+  { id: 'ph_2027_boxing',       name: 'Boxing Day',                   dates: 'Dec 26, 2027',     confirmedDates: '2027-12-26', audience: '', audienceSize: '', spiceAction: '', revenueModel: '', realisticRevenue: '', urgency: 'future',   category: 'culture'  },
 ]
 
 // ─── RISK / CONTINGENCY PROTOCOLS ─────────────────────────────────────────

@@ -55,6 +55,11 @@ import { DailyFocus } from '@/components/daily-focus'
 import { DailyQuote } from '@/components/daily-quote'
 import { BottomNav } from '@/components/mobile/bottom-nav'
 import { MobileDrawer } from '@/components/mobile/drawer'
+import { EccbRate } from '@/components/grenada/eccb-rate'
+import { PowerOutage } from '@/components/grenada/power-outage'
+import { InternetSpeed } from '@/components/grenada/internet-speed'
+import { HurricaneSeason } from '@/components/grenada/hurricane-season'
+import { FerrySchedule } from '@/components/grenada/ferry-schedule'
 
 const AnalyticsDashboard = dynamic(
   () => import('@/components/analytics-dashboard').then(m => ({ default: m.AnalyticsDashboard })),
@@ -663,6 +668,16 @@ export default function GrenadaCommandCenter() {
               onRemove={handleRemoveSpeed}
             />
           </TwoCol>
+          <div className="text-[9px] font-mono tracking-[0.2em] text-muted-foreground uppercase pt-1">// Grenada</div>
+          <TwoCol>
+            <EccbRate />
+            <PowerOutage />
+          </TwoCol>
+          <TwoCol>
+            <InternetSpeed />
+            <HurricaneSeason />
+          </TwoCol>
+          <FerrySchedule />
           <CredentialsVault />
           <EmailReportButton />
           <DataBackup state={state} onImport={setState} />
