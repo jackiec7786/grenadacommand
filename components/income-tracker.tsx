@@ -1,6 +1,7 @@
 "use client"
 
-import { INCOME_STREAMS, PHASE_CONFIGS, PHASE_INCOME_TARGETS } from '@/lib/data'
+import { PHASE_CONFIGS, PHASE_INCOME_TARGETS } from '@/lib/data'
+import { useConfig } from '@/hooks/use-config'
 
 interface IncomeTrackerProps {
   income: Record<string, number>
@@ -18,14 +19,15 @@ const QUICK_LINKS: Partial<Record<string, { label: string; href: string }>> = {
 }
 
 export function IncomeTracker({ income, currentPhase, onIncomeChange }: IncomeTrackerProps) {
+  const appConfig = useConfig()
   const config = PHASE_CONFIGS[currentPhase as keyof typeof PHASE_CONFIGS]
   const goal = PHASE_INCOME_TARGETS[currentPhase] || 2500
   const total = Object.values(income).reduce((s, v) => s + (v || 0), 0)
   const goalPct = Math.min(100, (total / goal) * 100)
 
   const activeIds = new Set<string>(config.activeStreams)
-  const activeStreams = INCOME_STREAMS.filter(s => activeIds.has(s.id))
-  const otherStreams = INCOME_STREAMS.filter(s => !activeIds.has(s.id) && (income[s.id] || 0) > 0)
+  const activeStreams = appConfig.incomeStreams.filter(s => activeIds.has(s.id))
+  const otherStreams = appConfig.incomeStreams.filter(s => !activeIds.has(s.id) && (income[s.id] || 0) > 0)
   const displayStreams = [...activeStreams, ...otherStreams]
 
   return (

@@ -1,7 +1,8 @@
 "use client"
 
-import { PSYCH_MESSAGES, type MoodEntry } from '@/lib/data'
+import type { MoodEntry } from '@/lib/data'
 import { useState } from 'react'
+import { useConfig } from '@/hooks/use-config'
 
 interface PsychSupportProps {
   mood: MoodEntry[]
@@ -25,8 +26,8 @@ function getRandomMessage(arr: string[], seed: string): string {
 }
 
 export function PsychSupport({ mood, streakDays, monthlyIncome, planStartDate, cash }: PsychSupportProps) {
+  const appConfig = useConfig()
   const [dismissed, setDismissed] = useState(false)
-  if (dismissed) return null
 
   const today = getTodayStr()
   const todayMood = mood.find(m => m.date === today)?.level
@@ -38,8 +39,10 @@ export function PsychSupport({ mood, streakDays, monthlyIncome, planStartDate, c
     return m.level === 'red' && d >= cutoff
   }).length
 
+  if (dismissed) return null
+
   // Determine which message type to show
-  let messageType: keyof typeof PSYCH_MESSAGES = 'onTrack'
+  let messageType = 'onTrack'
   let accent = 'var(--accent2)'
   let title = 'Keep going.'
 
@@ -64,11 +67,11 @@ export function PsychSupport({ mood, streakDays, monthlyIncome, planStartDate, c
     accent = 'var(--accent)'
     title = 'Building momentum.'
   } else {
-    // Don't show if nothing relevant to say
     return null
   }
 
-  const messages = PSYCH_MESSAGES[messageType]
+  const messages = appConfig.psychMessages[messageType] ?? []
+  if (messages.length === 0) return null
   const message = getRandomMessage(messages, today + messageType)
 
   return (

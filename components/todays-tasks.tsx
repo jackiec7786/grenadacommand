@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { TASKS, PHASE_CONFIGS } from '@/lib/data'
+import { useState } from 'react'
+import { PHASE_CONFIGS } from '@/lib/data'
+import { useConfig, invalidateConfigCache } from '@/hooks/use-config'
 import { Check, Pencil, Timer } from 'lucide-react'
 
 type Task = { label: string; tag: string; time: string }
@@ -20,8 +21,9 @@ interface TodaysTasksProps {
 export function TodaysTasks({ currentPhase, onPhaseChange, tasks, onTaskToggle, onStartTimer }: TodaysTasksProps) {
   const phaseKey = `p${currentPhase}`
   const config = PHASE_CONFIGS[currentPhase as keyof typeof PHASE_CONFIGS]
+  const appConfig = useConfig()
 
-  const [customLists, setCustomLists] = useState<TaskLists | null>(null)
+  const [localTasks, setLocalTasks] = useState<TaskLists | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [editLabel, setEditLabel] = useState('')
@@ -29,26 +31,21 @@ export function TodaysTasks({ currentPhase, onPhaseChange, tasks, onTaskToggle, 
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/settings').then(r => r.json()).then(d => {
-      if (d?.customTaskLists) setCustomLists(d.customTaskLists)
-    }).catch(() => {})
-  }, [])
-
-  const phaseTasks: Task[] = (customLists?.[currentPhase] ?? TASKS[currentPhase]) || []
+  const phaseTasks: Task[] = (localTasks?.[currentPhase] ?? appConfig.tasks[currentPhase]) || []
   const phaseDone = tasks[phaseKey] || {}
   const doneCount = Object.values(phaseDone).filter(Boolean).length
 
   const getLists = (): TaskLists => {
     const base: TaskLists = {}
-    for (const p of [1, 2, 3, 4]) base[p] = customLists?.[p] ?? TASKS[p].map(t => ({ ...t }))
+    for (const p of [1, 2, 3, 4]) base[p] = (localTasks?.[p] ?? appConfig.tasks[p] ?? []).map(t => ({ ...t }))
     return base
   }
 
   const saveCustom = async (next: TaskLists) => {
     setSaving(true)
-    await fetch('/api/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTaskLists: next }) }).catch(() => {})
-    setCustomLists(next)
+    await fetch('/api/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasks: next }) }).catch(() => {})
+    invalidateConfigCache()
+    setLocalTasks(next)
     setSaving(false)
   }
 

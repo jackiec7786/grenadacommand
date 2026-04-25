@@ -1,7 +1,7 @@
 "use client"
 
-import { RESILIENCE_ITEMS } from '@/lib/data'
 import { Check, Shield } from 'lucide-react'
+import { useConfig } from '@/hooks/use-config'
 
 interface ResilienceScorecardProps {
   resilience: Record<string, boolean>
@@ -20,14 +20,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 export function ResilienceScorecard({ resilience, onToggle }: ResilienceScorecardProps) {
-  const done = RESILIENCE_ITEMS.filter(i => resilience[i.id]).length
-  const total = RESILIENCE_ITEMS.length
+  const config = useConfig()
+  const done = config.resilienceItems.filter(i => resilience[i.id]).length
+  const total = config.resilienceItems.length
   const pct = Math.round((done / total) * 100)
 
   const riskLevel = pct < 30 ? 'HIGH RISK' : pct < 60 ? 'MODERATE' : pct < 90 ? 'GOOD' : 'RESILIENT'
   const riskColor = pct < 30 ? 'var(--danger)' : pct < 60 ? 'var(--warn)' : pct < 90 ? 'var(--accent2)' : 'var(--accent)'
 
-  const categories = [...new Set(RESILIENCE_ITEMS.map(i => i.category))]
+  const categories = [...new Set(config.resilienceItems.map(i => i.category))]
 
   return (
     <div className="bg-surface border border-border rounded-md p-5" style={{ borderTopWidth: 2, borderTopColor: riskColor }}>
@@ -57,7 +58,7 @@ export function ResilienceScorecard({ resilience, onToggle }: ResilienceScorecar
       {/* Items by category */}
       <div className="flex flex-col gap-3">
         {categories.map(cat => {
-          const catItems = RESILIENCE_ITEMS.filter(i => i.category === cat)
+          const catItems = config.resilienceItems.filter(i => i.category === cat)
           const catDone = catItems.filter(i => resilience[i.id]).length
           const color = CATEGORY_COLORS[cat] || 'var(--muted)'
           return (
