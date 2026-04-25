@@ -24,6 +24,6 @@ export async function PATCH(req: Request) {
     await saveSettings({ ...current, ...updates } as AppSettings)
     return Response.json({ ok: true })
   } catch {
-    return Response.json({ error: 'Failed to save' }, { status: 500 })
+    return Response.json({ ok: false })
   }
 }

@@ -27,6 +27,6 @@ export async function PATCH(req: Request) {
     await saveConfig({ ...current, ...updates })
     return Response.json({ ok: true })
   } catch {
-    return Response.json({ error: 'Redis unavailable — changes not saved' }, { status: 503 })
+    return Response.json({ ok: false })
   }
 }

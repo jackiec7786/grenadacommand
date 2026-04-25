@@ -26,7 +26,7 @@ export async function GET() {
   try {
     return Response.json(await getAll())
   } catch {
-    return Response.json([], { status: 500 })
+    return Response.json([])
   }
 }
 
@@ -41,6 +41,6 @@ export async function POST(req: Request) {
     await getRedis().set(KEY, await encrypt(JSON.stringify(all)))
     return Response.json({ ok: true, id: app.id })
   } catch {
-    return Response.json({ error: 'Failed to save' }, { status: 500 })
+    return Response.json({ ok: false })
   }
 }
