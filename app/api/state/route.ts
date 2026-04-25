@@ -26,6 +26,6 @@ export async function POST(req: Request) {
     await getRedis().set(KEY, await encrypt(JSON.stringify(body)))
     return Response.json({ ok: true })
   } catch {
-    return Response.json({ error: 'Failed to save' }, { status: 500 })
+    return Response.json({ ok: false })
   }
 }
