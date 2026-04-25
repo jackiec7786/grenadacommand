@@ -12,7 +12,7 @@ export async function GET() {
     const decrypted = await decrypt(raw)
     return Response.json(JSON.parse(decrypted))
   } catch {
-    return Response.json(null, { status: 500 })
+    return Response.json(null)
   }
 }
 

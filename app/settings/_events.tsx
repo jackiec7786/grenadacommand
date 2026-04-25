@@ -16,7 +16,7 @@ const URGENCY_COLORS: Record<string, string> = {
 }
 
 export function EventsTab({ config, onSaveConfig }: Props) {
-  const [events, setEvents] = useState<GrenadaEvent[]>(() => config.events.map(e => ({ ...e })))
+  const [events, setEvents] = useState<GrenadaEvent[]>(() => (config?.events ?? []).map(e => ({ ...e })))
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 

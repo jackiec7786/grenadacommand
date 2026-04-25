@@ -15,7 +15,7 @@ export function ChecklistsTab({ config, onSaveConfig }: Props) {
   const [phase, setPhase] = useState(1)
   const [lists, setLists] = useState<Record<number, ConfigChecklistItem[]>>(() => {
     const copy: Record<number, ConfigChecklistItem[]> = {}
-    for (const p of [1, 2, 3, 4]) copy[p] = (config.phaseChecklists[p] || []).map(i => ({ ...i }))
+    for (const p of [1, 2, 3, 4]) copy[p] = (config?.phaseChecklists?.[p] ?? []).map(i => ({ ...i }))
     return copy
   })
   const [editId, setEditId] = useState<string | null>(null)
@@ -60,7 +60,7 @@ export function ChecklistsTab({ config, onSaveConfig }: Props) {
   }
 
   const handleResetPhase = () => {
-    const original = config.phaseChecklists[phase] || []
+    const original = config?.phaseChecklists?.[phase] ?? []
     setLists(prev => ({ ...prev, [phase]: original.map(i => ({ ...i })) }))
   }
 

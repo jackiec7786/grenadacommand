@@ -17,11 +17,11 @@ function arrToText(arr: string[]) { return arr.join('\n') }
 function textToArr(text: string) { return text.split('\n').map(s => s.trim()).filter(Boolean) }
 
 export function RisksTab({ config, onSaveConfig }: Props) {
-  const [risks, setRisks] = useState<RiskScenario[]>(() => config.riskScenarios.map(r => ({
+  const [risks, setRisks] = useState<RiskScenario[]>(() => (config?.riskScenarios ?? []).map(r => ({
     ...r,
-    immediateActions: [...r.immediateActions],
-    parallelActions: [...r.parallelActions],
-    prevention: [...r.prevention],
+    immediateActions: [...(r.immediateActions ?? [])],
+    parallelActions: [...(r.parallelActions ?? [])],
+    prevention: [...(r.prevention ?? [])],
   })))
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)

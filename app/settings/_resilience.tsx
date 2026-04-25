@@ -13,7 +13,7 @@ const inp = 'bg-dim border border-border text-text font-mono text-[11px] p-1.5 r
 const CATEGORIES = ['Platform', 'Suppliers', 'Logistics', 'Banking', 'Emergency', 'Insurance', 'Platforms', 'SpiceClass']
 
 export function ResilienceTab({ config, onSaveConfig }: Props) {
-  const [items, setItems] = useState<ConfigResilienceItem[]>(() => config.resilienceItems.map(i => ({ ...i })))
+  const [items, setItems] = useState<ConfigResilienceItem[]>(() => (config?.resilienceItems ?? []).map(i => ({ ...i })))
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editIdeal, setEditIdeal] = useState('')

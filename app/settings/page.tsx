@@ -48,11 +48,23 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [settings, setSettings] = useState<Settings | null>(null)
   const [config, setConfig] = useState<MergedConfig | null>(null)
+  const [configError, setConfigError] = useState(false)
+  const [configLoading, setConfigLoading] = useState(false)
+
+  const loadConfig = () => {
+    setConfigError(false)
+    setConfigLoading(true)
+    fetch('/api/config')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))
+      .then(d => { if (d) { setConfig(d); } else { setConfigError(true) } })
+      .catch(() => setConfigError(true))
+      .finally(() => setConfigLoading(false))
+  }
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => setSettings({ ...DEFAULT_SETTINGS, ...d })).catch(() => setSettings(DEFAULT_SETTINGS))
-    fetch('/api/config').then(r => r.json()).then(setConfig).catch(() => {})
-  }, [])
+    loadConfig()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveSettings = async (updates: Partial<Settings>) => {
     const res = await fetch('/api/settings', {
@@ -85,7 +97,7 @@ export default function SettingsPage() {
 
   const configTabs: Tab[] = ['tasks', 'milestones', 'checklists', 'streams', 'events', 'risk', 'psych', 'resilience']
   const needsConfig = configTabs.includes(activeTab)
-  const isLoading = !settings || (needsConfig && !config)
+  const isLoading = !settings || (needsConfig && !config && !configError) || configLoading
 
   return (
     <div className="max-w-[860px] mx-auto px-5 py-6">
@@ -112,6 +124,17 @@ export default function SettingsPage() {
         </div>
       ) : (
         <>
+          {needsConfig && configError && !config && (
+            <div className="p-4 rounded-md space-y-3" style={{ background: 'color-mix(in srgb, var(--danger) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)' }}>
+              <p className="font-mono text-[11px] leading-relaxed" style={{ color: 'var(--danger)' }}>
+                ⚠ Failed to load configuration. Redis may be unavailable or the response was malformed.
+              </p>
+              <p className="font-mono text-[10px] text-muted-foreground">Your data is safe. Check Settings → Advanced for Redis status.</p>
+              <button onClick={loadConfig} className="font-mono text-[10px] uppercase px-3 py-1.5 rounded-sm cursor-pointer transition-all" style={{ background: 'var(--danger)', color: '#fff' }}>
+                Retry
+              </button>
+            </div>
+          )}
           {activeTab === 'profile' && settings && (
             <ProfileTab theme={settings.theme} sessionTimeoutDays={settings.sessionTimeoutDays} onSave={saveSettings} />
           )}
