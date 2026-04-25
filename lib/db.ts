@@ -18,7 +18,8 @@ export function getRedis(): Redis {
       maxRetriesPerRequest: 1,
       connectTimeout: 5000,
       commandTimeout: 5000,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,
+      retryStrategy: (times) => times > 10 ? null : Math.min(times * 300, 3000),
     })
     // Without this listener, connection errors crash the Node.js process
     global.redis.on('error', (err) => console.error('[redis]', err.message))
