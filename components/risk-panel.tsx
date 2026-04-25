@@ -1,13 +1,15 @@
 "use client"
 
-import { RISK_SCENARIOS, RISK_QUICK_RESPONSES } from '@/lib/data'
+import { RISK_QUICK_RESPONSES } from '@/lib/data'
 import { useState } from 'react'
+import { useConfig } from '@/hooks/use-config'
 import { AlertTriangle, ChevronDown, ChevronUp, Shield } from 'lucide-react'
 
 const PROB_COLORS = { HIGH: 'var(--danger)', MEDIUM: 'var(--warn)', LOW: 'var(--accent2)' }
 const IMPACT_COLORS = { CRITICAL: 'var(--danger)', HIGH: 'var(--warn)', MEDIUM: 'var(--accent2)' }
 
 export function RiskPanel() {
+  const config = useConfig()
   const [activeTab, setActiveTab] = useState<'scenarios' | 'quick'>('quick')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -71,7 +73,7 @@ export function RiskPanel() {
       {/* Full Scenarios */}
       {activeTab === 'scenarios' && (
         <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
-          {RISK_SCENARIOS.map(scenario => {
+          {config.riskScenarios.map(scenario => {
             const isExpanded = expandedId === scenario.id
             return (
               <div key={scenario.id} className="border border-border rounded-sm overflow-hidden">

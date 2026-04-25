@@ -2,21 +2,20 @@
 
 import { useState } from 'react'
 import { TASKS, PHASE_CONFIGS } from '@/lib/data'
+import type { MergedConfig, ConfigTask } from '@/lib/config'
 
-type Task = { label: string; tag: string; time: string }
-type TaskLists = Record<number, Task[]>
+type TaskLists = Record<number, ConfigTask[]>
 
 interface Props {
-  customTaskLists: TaskLists | null
-  onSave: (data: { customTaskLists: TaskLists | null }) => Promise<void>
+  config: MergedConfig
+  onSaveConfig: (updates: Record<string, unknown>) => Promise<void>
 }
 
-export function TasksTab({ customTaskLists, onSave }: Props) {
+export function TasksTab({ config, onSaveConfig }: Props) {
   const [phase, setPhase] = useState(1)
   const [lists, setLists] = useState<TaskLists>(() => {
-    if (customTaskLists) return customTaskLists
     const copy: TaskLists = {}
-    for (const p of [1, 2, 3, 4]) copy[p] = TASKS[p].map(t => ({ ...t }))
+    for (const p of [1, 2, 3, 4]) copy[p] = (config.tasks[p] ?? []).map(t => ({ ...t }))
     return copy
   })
   const [newLabel, setNewLabel] = useState('')
@@ -42,16 +41,22 @@ export function TasksTab({ customTaskLists, onSave }: Props) {
     }
     setEditIdx(null)
   }
+
   const handleSave = async () => {
     setSaving(true)
-    await onSave({ customTaskLists: lists })
+    await onSaveConfig({ tasks: lists })
     setSaving(false)
   }
+
   const resetPhase = () => setLists(prev => ({ ...prev, [phase]: TASKS[phase].map(t => ({ ...t })) }))
-  const resetAll = () => {
+
+  const resetAll = async () => {
     const copy: TaskLists = {}
     for (const p of [1, 2, 3, 4]) copy[p] = TASKS[p].map(t => ({ ...t }))
     setLists(copy)
+    setSaving(true)
+    await onSaveConfig({ tasks: null })
+    setSaving(false)
   }
 
   return (
@@ -97,17 +102,19 @@ export function TasksTab({ customTaskLists, onSave }: Props) {
             <input className={inp} placeholder="Tag (e.g. UPWORK)" value={newTag} onChange={e => setNewTag(e.target.value)} />
             <input className={inp} placeholder="Time (e.g. 30min)" value={newTime} onChange={e => setNewTime(e.target.value)} />
           </div>
-          <button onClick={addTask} disabled={!newLabel.trim()} className="font-mono text-[10px] uppercase px-3 py-1.5 rounded-sm cursor-pointer disabled:opacity-40" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>
+          <button onClick={addTask} disabled={!newLabel.trim()} className="font-mono text-[10px] uppercase px-3 py-1.5 rounded-sm cursor-pointer disabled:opacity-40"
+            style={{ background: 'var(--accent)', color: 'var(--bg)' }}>
             Add Task
           </button>
         </div>
       </div>
 
       <div className="flex gap-2">
-        <button onClick={handleSave} disabled={saving} className="font-mono text-[10px] uppercase px-4 py-2 rounded-sm cursor-pointer disabled:opacity-40 transition-all" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>
+        <button onClick={handleSave} disabled={saving} className="font-mono text-[10px] uppercase px-4 py-2 rounded-sm cursor-pointer disabled:opacity-40 transition-all"
+          style={{ background: 'var(--accent)', color: 'var(--bg)' }}>
           {saving ? 'Saving...' : 'Save All Tasks'}
         </button>
-        <button onClick={resetAll} className="font-mono text-[10px] uppercase px-4 py-2 rounded-sm cursor-pointer border border-border text-muted-foreground">
+        <button onClick={resetAll} disabled={saving} className="font-mono text-[10px] uppercase px-4 py-2 rounded-sm cursor-pointer border border-border text-muted-foreground">
           Reset All Phases
         </button>
       </div>

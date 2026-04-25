@@ -1,7 +1,8 @@
 "use client"
 
-import { GRENADA_EVENTS, type GrenadaEvent } from '@/lib/data'
+import type { GrenadaEvent } from '@/lib/data'
 import { useState } from 'react'
+import { useConfig } from '@/hooks/use-config'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface EventCalendarProps {
@@ -27,15 +28,16 @@ function daysUntil(dateStr: string): number {
 }
 
 export function EventCalendar({ eventChecks, onToggleCheck }: EventCalendarProps) {
+  const config = useConfig()
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const sorted = [...GRENADA_EVENTS].sort((a, b) =>
+  const sorted = [...config.events].sort((a, b) =>
     new Date(a.confirmedDates).getTime() - new Date(b.confirmedDates).getTime()
   )
 
   const activeEvents = sorted.filter(e => daysUntil(e.confirmedDates) > -30)
   const actionItems = (eventId: string) => {
-    const ev = GRENADA_EVENTS.find(e => e.id === eventId)
+    const ev = config.events.find(e => e.id === eventId)
     if (!ev) return []
     return ev.spiceAction.split('. ').filter(Boolean)
   }
@@ -44,7 +46,7 @@ export function EventCalendar({ eventChecks, onToggleCheck }: EventCalendarProps
     <div className="bg-surface border border-border rounded-md p-5" style={{ borderTopWidth: 2, borderTopColor: 'var(--accent)' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">// Grenada Event Calendar</div>
-        <div className="text-[10px] font-mono text-muted-foreground">{GRENADA_EVENTS.length} events tracked</div>
+        <div className="text-[10px] font-mono text-muted-foreground">{config.events.length} events tracked</div>
       </div>
 
       <div className="text-[11px] font-mono text-muted-foreground mb-4 leading-relaxed">

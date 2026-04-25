@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from 'react'
-import { PHASES, MILESTONES, PHASE_CONFIGS } from '@/lib/data'
+import { PHASES, PHASE_CONFIGS } from '@/lib/data'
+import { useConfig } from '@/hooks/use-config'
 
 interface ProgressDashboardProps {
   currentPhase: number
@@ -10,12 +11,13 @@ interface ProgressDashboardProps {
 }
 
 export function ProgressDashboard({ currentPhase, milestones, onMilestoneToggle }: ProgressDashboardProps) {
+  const config = useConfig()
   const [showNext, setShowNext] = useState(false)
   const totalDone = Object.values(milestones).filter(Boolean).length
-  const overallPct = Math.round((totalDone / MILESTONES.length) * 100)
+  const overallPct = Math.round((totalDone / config.milestones.length) * 100)
 
-  const currentMilestones = MILESTONES.filter(m => m.phase === currentPhase)
-  const nextMilestones = MILESTONES.filter(m => m.phase === currentPhase + 1)
+  const currentMilestones = config.milestones.filter(m => m.phase === currentPhase)
+  const nextMilestones = config.milestones.filter(m => m.phase === currentPhase + 1)
   const currentDone = currentMilestones.filter(m => milestones[m.id]).length
 
   return (
@@ -35,7 +37,7 @@ export function ProgressDashboard({ currentPhase, milestones, onMilestoneToggle 
           const cfg = PHASE_CONFIGS[phase.n as keyof typeof PHASE_CONFIGS]
           const isCurrent = phase.n === currentPhase
           const isComplete = phase.n < currentPhase
-          const phaseMilestones = MILESTONES.filter(m => m.phase === phase.n)
+          const phaseMilestones = config.milestones.filter(m => m.phase === phase.n)
           const phaseDone = phaseMilestones.filter(m => milestones[m.id]).length
           const phasePct = Math.round((phaseDone / phaseMilestones.length) * 100)
           return (
@@ -108,7 +110,7 @@ export function ProgressDashboard({ currentPhase, milestones, onMilestoneToggle 
       )}
 
       <div className="mt-3 pt-3 border-t border-border">
-        <span className="font-mono text-[10px] text-muted-foreground">{totalDone}/{MILESTONES.length} milestones complete</span>
+        <span className="font-mono text-[10px] text-muted-foreground">{totalDone}/{config.milestones.length} milestones complete</span>
       </div>
     </div>
   )

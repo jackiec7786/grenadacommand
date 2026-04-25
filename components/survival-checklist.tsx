@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from 'react'
-import { PHASE_CHECKLISTS, PHASE_CONFIGS } from '@/lib/data'
+import { useState, useEffect } from 'react'
+import { PHASE_CONFIGS } from '@/lib/data'
+import { useConfig } from '@/hooks/use-config'
 import { Check } from 'lucide-react'
 
 interface PhaseChecklistProps {
@@ -20,7 +21,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 export function SurvivalChecklist({ currentPhase, phaseChecks, onToggle, cash }: PhaseChecklistProps) {
-  const items = PHASE_CHECKLISTS[currentPhase] || []
+  const appConfig = useConfig()
+  const items = appConfig.phaseChecklists[currentPhase] || []
   const config = PHASE_CONFIGS[currentPhase as keyof typeof PHASE_CONFIGS]
   const done = items.filter(i => phaseChecks[i.id]).length
   const total = items.length
@@ -31,15 +33,17 @@ export function SurvivalChecklist({ currentPhase, phaseChecks, onToggle, cash }:
   const categories: string[] = []
   items.forEach(i => { if (!seen.has(i.category)) { seen.add(i.category); categories.push(i.category) } })
 
-  // Default-collapse fully-done categories
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
     const s = new Set<string>()
     categories.forEach(cat => {
       const catItems = items.filter(i => i.category === cat)
-      if (catItems.every(i => phaseChecks[i.id])) s.add(cat)
+      if (catItems.length > 0 && catItems.every(i => phaseChecks[i.id])) s.add(cat)
     })
-    return s
-  })
+    setCollapsed(s)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, phaseChecks])
 
   const toggleCat = (cat: string) =>
     setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n })
