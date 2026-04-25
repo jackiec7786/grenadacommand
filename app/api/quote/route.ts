@@ -16,14 +16,18 @@ function localFallback(): QuoteResponse {
   return { text: q.text, author: q.author, source: 'local' }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const refresh = searchParams.get('refresh') === '1'
   const key = todayKey()
 
-  try {
-    const redis = getRedis()
-    const cached = await redis.get(key)
-    if (cached) return Response.json(JSON.parse(cached))
-  } catch {}
+  if (!refresh) {
+    try {
+      const redis = getRedis()
+      const cached = await redis.get(key)
+      if (cached) return Response.json(JSON.parse(cached))
+    } catch {}
+  }
 
   // Try quotable.io
   try {

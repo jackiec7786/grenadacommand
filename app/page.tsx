@@ -673,6 +673,7 @@ export default function GrenadaCommandCenter() {
       <BottomNav
         activeTab={activeTab}
         visibleTabs={visibleTabs}
+        currentPhase={state.currentPhase}
         onTabChange={setActiveTab}
         onMorePress={() => setDrawerOpen(true)}
       />

@@ -39,7 +39,7 @@ export function DailyQuote() {
 
   const handleNew = () => {
     setLoading(true)
-    fetch('/api/quote?bust=' + Date.now())
+    fetch('/api/quote?refresh=1')
       .then(r => r.json())
       .then(d => { setQuote(d); setLoading(false) })
       .catch(() => setLoading(false))
