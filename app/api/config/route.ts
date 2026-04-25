@@ -1,5 +1,12 @@
 import { requireAuth } from '@/lib/require-auth'
 import { getConfig, saveConfig, mergeWithDefaults } from '@/lib/config'
+import type { AppConfig } from '@/lib/config'
+
+const EMPTY: AppConfig = {
+  tasks: null, milestones: null, phaseChecklists: null,
+  incomeStreams: null, events: null, riskScenarios: null,
+  psychMessages: null, resilienceItems: null,
+}
 
 export async function GET() {
   if (!await requireAuth()) return Response.json(null, { status: 401 })
@@ -7,7 +14,8 @@ export async function GET() {
     const config = await getConfig()
     return Response.json(mergeWithDefaults(config))
   } catch {
-    return Response.json(null, { status: 503 })
+    // Redis unavailable — return hardcoded defaults so the UI is functional
+    return Response.json(mergeWithDefaults(EMPTY))
   }
 }
 
@@ -19,6 +27,6 @@ export async function PATCH(req: Request) {
     await saveConfig({ ...current, ...updates })
     return Response.json({ ok: true })
   } catch {
-    return Response.json({ error: 'Failed to save' }, { status: 500 })
+    return Response.json({ error: 'Redis unavailable — changes not saved' }, { status: 503 })
   }
 }

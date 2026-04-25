@@ -48,10 +48,14 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [settings, setSettings] = useState<Settings | null>(null)
   const [config, setConfig] = useState<MergedConfig | null>(null)
+  const [configError, setConfigError] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => setSettings({ ...DEFAULT_SETTINGS, ...d })).catch(() => setSettings(DEFAULT_SETTINGS))
-    fetch('/api/config').then(r => r.json()).then(setConfig).catch(() => {})
+    fetch('/api/config')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))
+      .then(d => { if (d) setConfig(d); else setConfigError(true) })
+      .catch(() => setConfigError(true))
   }, [])
 
   const saveSettings = async (updates: Partial<Settings>) => {
@@ -85,7 +89,7 @@ export default function SettingsPage() {
 
   const configTabs: Tab[] = ['tasks', 'milestones', 'checklists', 'streams', 'events', 'risk', 'psych', 'resilience']
   const needsConfig = configTabs.includes(activeTab)
-  const isLoading = !settings || (needsConfig && !config)
+  const isLoading = !settings || (needsConfig && !config && !configError)
 
   return (
     <div className="max-w-[860px] mx-auto px-5 py-6">
@@ -112,6 +116,12 @@ export default function SettingsPage() {
         </div>
       ) : (
         <>
+          {needsConfig && configError && !config && (
+            <div className="p-4 rounded-md font-mono text-[11px] leading-relaxed" style={{ background: 'var(--danger)10', border: '1px solid var(--danger)40', color: 'var(--danger)' }}>
+              ⚠ Configuration unavailable — Redis may be down. Check Settings → Advanced for connection status.
+              Your existing data is safe. Changes cannot be saved until Redis reconnects.
+            </div>
+          )}
           {activeTab === 'profile' && settings && (
             <ProfileTab theme={settings.theme} sessionTimeoutDays={settings.sessionTimeoutDays} onSave={saveSettings} />
           )}
