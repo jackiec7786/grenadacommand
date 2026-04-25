@@ -5,35 +5,67 @@ import { Home, DollarSign, TrendingUp, Briefcase, Heart, Wrench, Lock, X } from 
 
 type Tab = 'today' | 'finances' | 'progress' | 'business' | 'wellbeing' | 'tools'
 
-const NAV_ITEMS: { id: Tab; label: string; icon: React.ReactNode; lockedAfterPhase: string }[] = [
-  { id: 'today',     label: 'Today',     icon: <Home className="w-5 h-5" />,       lockedAfterPhase: '' },
-  { id: 'finances',  label: 'Money',     icon: <DollarSign className="w-5 h-5" />, lockedAfterPhase: '' },
-  { id: 'progress',  label: 'Progress',  icon: <TrendingUp className="w-5 h-5" />, lockedAfterPhase: '' },
-  { id: 'business',  label: 'Business',  icon: <Briefcase className="w-5 h-5" />,  lockedAfterPhase: 'Phase 2+' },
-  { id: 'wellbeing', label: 'Wellbeing', icon: <Heart className="w-5 h-5" />,      lockedAfterPhase: 'Phase 3+' },
-  { id: 'tools',     label: 'Tools',     icon: <Wrench className="w-5 h-5" />,     lockedAfterPhase: 'Phase 4' },
+const NAV_ITEMS: { id: Tab; label: string; icon: React.ReactNode; minPhase: number }[] = [
+  { id: 'today',     label: 'Today',     icon: <Home className="w-5 h-5" />,       minPhase: 1 },
+  { id: 'finances',  label: 'Money',     icon: <DollarSign className="w-5 h-5" />, minPhase: 1 },
+  { id: 'progress',  label: 'Progress',  icon: <TrendingUp className="w-5 h-5" />, minPhase: 1 },
+  { id: 'business',  label: 'Business',  icon: <Briefcase className="w-5 h-5" />,  minPhase: 2 },
+  { id: 'wellbeing', label: 'Wellbeing', icon: <Heart className="w-5 h-5" />,      minPhase: 3 },
+  { id: 'tools',     label: 'Tools',     icon: <Wrench className="w-5 h-5" />,     minPhase: 4 },
 ]
+
+const OVERRIDES_KEY = 'grenada:unlocked-tabs'
+
+function getOverrides(): Set<Tab> {
+  try {
+    const raw = localStorage.getItem(OVERRIDES_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch { return new Set() }
+}
+
+function saveOverride(tab: Tab) {
+  try {
+    const overrides = getOverrides()
+    overrides.add(tab)
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify([...overrides]))
+  } catch {}
+}
 
 interface Props {
   activeTab: Tab
   visibleTabs: Tab[]
+  currentPhase: number
   onTabChange: (tab: Tab) => void
   onMorePress: () => void
 }
 
-export function BottomNav({ activeTab, visibleTabs, onTabChange, onMorePress }: Props) {
+export function BottomNav({ activeTab, visibleTabs, currentPhase, onTabChange, onMorePress }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const items = NAV_ITEMS.filter(n => visibleTabs.includes(n.id))
   const showMore = items.length < NAV_ITEMS.length || items.length > 4
 
-  // Show at most 4 items in the bar, rest go into the sheet
   const barItems = showMore ? items.slice(0, 4) : items
   const overflowItems = items.slice(4)
 
   const handleTabSelect = (id: Tab) => {
     onTabChange(id)
     setSheetOpen(false)
+  }
+
+  const handleLockedTabTap = (item: typeof NAV_ITEMS[0]) => {
+    const overrides = getOverrides()
+    if (overrides.has(item.id)) {
+      handleTabSelect(item.id)
+      return
+    }
+    const confirmed = window.confirm(
+      `${item.label} tab is designed for Phase ${item.minPhase}+. You're currently in Phase ${currentPhase}. Open anyway?`
+    )
+    if (confirmed) {
+      saveOverride(item.id)
+      handleTabSelect(item.id)
+    }
   }
 
   const handleSettingsPress = () => {
@@ -63,10 +95,7 @@ export function BottomNav({ activeTab, visibleTabs, onTabChange, onMorePress }: 
               {item.icon}
               <span className="font-mono text-[9px] tracking-[0.05em]">{item.label}</span>
               {active && (
-                <span
-                  className="absolute bottom-0 w-8 h-[2px] rounded-full"
-                  style={{ background: 'var(--primary)' }}
-                />
+                <span className="absolute bottom-0 w-8 h-[2px] rounded-full" style={{ background: 'var(--primary)' }} />
               )}
             </button>
           )
@@ -123,19 +152,17 @@ export function BottomNav({ activeTab, visibleTabs, onTabChange, onMorePress }: 
             <div className="px-4 py-3 space-y-1">
               {NAV_ITEMS.map(item => {
                 const unlocked = visibleTabs.includes(item.id)
-                const active = activeTab === item.id && unlocked
+                const active = activeTab === item.id
 
                 return (
                   <button
                     key={item.id}
-                    onClick={() => unlocked ? handleTabSelect(item.id) : undefined}
-                    disabled={!unlocked}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+                    onClick={() => unlocked ? handleTabSelect(item.id) : handleLockedTabTap(item)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer"
                     style={{
                       background: active ? 'var(--primary)15' : 'var(--surface2)',
                       border: `1px solid ${active ? 'var(--primary)40' : 'var(--border)'}`,
-                      opacity: unlocked ? 1 : 0.4,
-                      cursor: unlocked ? 'pointer' : 'default',
+                      opacity: unlocked ? 1 : 0.55,
                     }}
                   >
                     <span style={{ color: active ? 'var(--primary)' : unlocked ? 'var(--text)' : 'var(--muted-foreground)' }}>
@@ -149,7 +176,7 @@ export function BottomNav({ activeTab, visibleTabs, onTabChange, onMorePress }: 
                     </span>
                     {!unlocked && (
                       <span className="font-mono text-[9px] px-1.5 py-0.5 rounded-sm" style={{ background: 'var(--dim)', color: 'var(--muted-foreground)' }}>
-                        {item.lockedAfterPhase}
+                        Phase {item.minPhase}+
                       </span>
                     )}
                     {active && (
