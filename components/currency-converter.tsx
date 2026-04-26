@@ -57,7 +57,7 @@ export function CurrencyConverter() {
   const context = contextLabel()
 
   return (
-    <div className="bg-surface border border-border rounded-md p-4 md:p-5" style={{ borderTopWidth: 2, borderTopColor: 'var(--accent)' }}>
+    <div className="bg-surface border border-border rounded-md p-4" style={{ borderTopWidth: 2, borderTopColor: 'var(--accent)' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="text-[9px] font-mono tracking-[0.25em] text-muted-foreground uppercase">// Currency Converter</div>
         {rates
@@ -72,7 +72,7 @@ export function CurrencyConverter() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[14px] text-muted-foreground">{from.symbol}</span>
           <input
             type="number"
-            className="w-full bg-dim border border-border text-text font-mono text-[20px] md:text-[24px] font-bold px-10 py-3 rounded-sm focus:outline-none focus:border-primary text-right"
+            className="w-full bg-dim border border-border text-text font-mono text-[20px] font-bold px-10 py-3 rounded-sm focus:outline-none focus:border-primary text-right"
             value={amount}
             min={0}
             onChange={e => setAmount(e.target.value)}
@@ -82,11 +82,11 @@ export function CurrencyConverter() {
       </div>
 
       {/* Currency pair selectors */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 mb-4">
+      <div className="flex flex-col items-stretch gap-2 mb-4">
         <select className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary min-h-[44px]" value={fromCurrency} onChange={e => setFromCurrency(e.target.value)}>
           {BASE_CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
         </select>
-        <button onClick={swap} className="md:shrink-0 w-full md:w-auto px-4 md:px-2 py-2 rounded-sm border border-border text-muted-foreground hover:text-text hover:border-muted-foreground transition-all cursor-pointer font-mono text-sm min-h-[44px]">⇄ Swap</button>
+        <button onClick={swap} className="w-full px-4 py-2 rounded-sm border border-border text-muted-foreground hover:text-text hover:border-muted-foreground transition-all cursor-pointer font-mono text-sm min-h-[44px]">⇄ Swap</button>
         <select className="flex-1 bg-dim border border-border text-text font-mono text-xs p-2 rounded-sm focus:outline-none focus:border-primary min-h-[44px]" value={toCurrency} onChange={e => setToCurrency(e.target.value)}>
           {BASE_CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
         </select>
@@ -95,7 +95,7 @@ export function CurrencyConverter() {
       {/* Result */}
       <div className="p-4 rounded-md border mb-4 text-center" style={{ borderColor: 'var(--accent)30', background: 'var(--accent)06' }}>
         <div className="font-mono text-[11px] text-muted-foreground mb-1">{amountN} {fromCurrency} =</div>
-        <div className="font-mono text-[28px] md:text-[36px] font-extrabold text-primary leading-none break-all">
+        <div className="font-mono text-[28px] font-extrabold text-primary leading-none break-all">
           {to.symbol}{result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className="font-mono text-[11px] text-muted-foreground mt-1">{toCurrency}</div>
@@ -107,7 +107,7 @@ export function CurrencyConverter() {
       {/* Quick amounts */}
       <div>
         <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.1em] mb-2">Quick amounts ({fromCurrency})</div>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5">
           {QUICK_AMOUNTS.map(a => (
             <button key={a} onClick={() => setAmount(String(a))} className="text-[10px] font-mono px-1 py-2 rounded-sm border cursor-pointer transition-all min-h-[40px]" style={parseFloat(amount) === a ? { background: 'var(--accent)', color: 'var(--bg)', borderColor: 'var(--accent)' } : { borderColor: 'var(--border)', color: 'var(--muted)' }}>
               {from.symbol}{a}
